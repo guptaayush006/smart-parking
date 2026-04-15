@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Interactive Hero Section -->
+<section class="hero-section"
+    style="padding: 4rem 0; text-align: left; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 2rem;">
+    <div style="flex: 1; min-width: 300px;">
+        <h1 style="font-size: 4rem; line-height: 1.2; margin-bottom: 1.5rem;">The Future of <br><span
+                style="color: var(--primary);">Smart Parking</span></h1>
+        <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 2rem; max-width: 500px;">
+            Experience a seamless parking ecosystem. Book slots in advance, drive through automated toll gates, and pay
+            effortlessly via QR codes. Welcome to the next-generation parking solution.
+        </p>
+        <div class="actions" style="display: flex; gap: 1rem;">
+            {% if session.get('user_id') %}
+            <a href="/user_dashboard" class="btn primary" style="padding: 1rem 2rem; font-size: 1.1rem;">Go to
+                Dashboard</a>
+            {% else %}
+            <a href="/login" class="btn primary" style="padding: 1rem 2rem; font-size: 1.1rem;">Get Started</a>
+            <a href="#how-it-works" class="btn"
+                style="padding: 1rem 2rem; font-size: 1.1rem; background: rgba(255,255,255,0.1); color: white;">Learn
+                More</a>
+            {% endif %}
+        </div>
+    </div>
+    <div style="flex: 1; min-width: 300px; display: flex; justify-content: center;">
+        <!-- Glowing aesthetic element to make it look premium -->
+        <div
+            style="width: 300px; height: 300px; background: radial-gradient(circle, var(--primary) 0%, transparent 70%); border-radius: 50%; opacity: 0.5; filter: blur(40px); position: absolute; z-index: -1;">
+        </div>
+        <i class="fa-solid fa-car-tunnel"
+            style="font-size: 10rem; color: var(--text-main); text-shadow: 0 0 30px var(--primary);"></i>
+    </div>
+</section>
+
+<!-- Informational Section -->
+<section id="how-it-works"
+    style="padding: 4rem 0; border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); margin: 2rem 0;">
+    <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 3rem;">How It <span
+            style="color: var(--primary);">Works</span></h2>
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+
+        <div class="feature-card"
+            style="flex: 1; min-width: 250px; background: var(--card-bg); padding: 2rem; border-radius: 12px; border: 1px solid var(--glass-border); text-align: center;">
+            <i class="fa-solid fa-mobile-screen-button"
+                style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem;"></i>
+            <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">1. Pre-Book Online</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Check our live parking map and reserve a spot
+                securely before you even leave your house to guarantee availability.</p>
+        </div>
+
+        <div class="feature-card"
+            style="flex: 1; min-width: 250px; background: var(--card-bg); padding: 2rem; border-radius: 12px; border: 1px solid var(--glass-border); text-align: center;">
+            <i class="fa-solid fa-bridge" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem;"></i>
+            <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">2. Auto-Gate Entry</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Arrive at the parking lot and our smart toll system
+                will automatically verify your vehicle registration and lift the barrier.</p>
+        </div>
+
+        <div class="feature-card"
+            style="flex: 1; min-width: 250px; background: var(--card-bg); padding: 2rem; border-radius: 12px; border: 1px solid var(--glass-border); text-align: center;">
+            <i class="fa-solid fa-qrcode" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem;"></i>
+            <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">3. QR Code Checkout</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">When you leave, the system calculates your duration
+                and generates a seamless QR code receipt for instant digital payment.</p>
+        </div>
+
+    </div>
+</section>
+
+<!-- Live Slots Section (Counts only on landing) -->
+<section class="slots-section" style="padding: 2rem 0; text-align: center;">
+    <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Spots <span style="color: var(--primary);">Available</span></h2>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">Current real-time capacity available for booking.</p>
+
+    <div style="font-size: 5rem; font-weight: bold; color: var(--success); text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);"
+        id="available-count">
+        --
+    </div>
+    <p style="color: var(--text-muted);">Out of 50 total slots</p>
+</section>
+{% endblock %}

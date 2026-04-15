@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container"
+    style="max-width: 450px; text-align: center; margin: 4rem auto; padding: 3rem 2rem; position: relative;">
+
+    <div style="margin-bottom: 2rem;">
+        <i class="fa-solid fa-building-columns"
+            style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+        <h2 style="font-size: 1.8rem; letter-spacing: 0.5px;">Secure <span
+                style="color: var(--primary);">Checkout</span></h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Smart Parking System Payments</p>
+    </div>
+
+    <!-- Error/Notice Banner -->
+    {% if request.args.get('error') %}
+    <div
+        style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(239, 68, 68, 0.4); text-align: center; font-weight: bold;">
+        <i class="fa-solid fa-triangle-exclamation"></i> {{ request.args.get('error') }}
+    </div>
+    {% endif %}
+
+    <!-- Order Summary -->
+    <div
+        style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 2rem; text-align: left;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.8rem;">
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Receipt ID</span>
+            <span style="font-weight: 600;">#{{ session_rec.id }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.8rem;">
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Vehicle No.</span>
+            <span style="font-weight: 600; color: var(--primary);">{{ session_rec.vehicle_number }}</span>
+        </div>
+        <div
+            style="display: flex; justify-content: space-between; margin-bottom: 0.8rem; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.8rem;">
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Duration</span>
+            <span style="font-weight: 600;">{{ session_rec.total_duration_minutes }} mins</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+            <span style="color: var(--text-main); font-weight: 600; font-size: 1.1rem;">Total Due</span>
+            <span style="font-weight: 800; font-size: 1.5rem; color: var(--success);">₹{{
+                "%.2f"|format(session_rec.cost) }}</span>
+        </div>
+    </div>
+
+    <!-- Payment Simulation Controls -->
+    {% if session_rec.cost > 0 %}
+    <!-- Auto-Generated UPI QR Code -->
+    <div
+        style="background: rgba(0,0,0,0.4); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px dashed var(--glass-border);">
+        <h4 style="margin-bottom: 1rem; color: white; font-size: 1.1rem;">Scan via UPI to Auto-Pay</h4>
+        <img src="data:image/png;base64,{{ qr_base64 }}"
+            style="width: 180px; height: 180px; border-radius: 8px; border: 4px solid white; box-shadow: 0 0 15px rgba(255,255,255,0.2);">
+        <p style="margin-top: 0.8rem; color: var(--text-muted); font-size: 0.95rem;">UPI ID: <strong
+                style="color: white; letter-spacing: 0.5px;">guptaayush122006@axl</strong></p>
+    </div>
+
+    <form action="/api/process_payment" method="POST">
+        <input type="hidden" name="session_id" value="{{ session_rec.id }}">
+        <input type="hidden" name="amount" value="{{ session_rec.cost }}">
+
+        <div class="form-group" style="text-align: left;">
+            <label>Select Payment Method</label>
+            <select name="payment_method" required
+                style="background: var(--bg-dark); border: 1px solid var(--glass-border);">
+                <option value="upi">UPI (GPay / PhonePe / Paytm)</option>
+                <option value="card">Credit / Debit Card</option>
+                <option value="wallet">Digital Wallet</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn primary"
+            style="width: 100%; padding: 1rem; font-size: 1.1rem; margin-top: 1rem; background: var(--success); border-color: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+            <i class="fa-solid fa-lock"></i> Pay ₹{{ "%.2f"|format(session_rec.cost) }}
+        </button>
+    </form>
+    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 1.5rem;"><i
+            class="fa-solid fa-shield-halved"></i> 256-bit Secure Encrypted Connection</p>
+
+    {% else %}
+    <!-- Auto-Clear for Subscribed Users -->
+    <div
+        style="padding: 1.5rem; border-radius: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);">
+        <i class="fa-solid fa-crown" style="font-size: 2rem; color: #fbbf24; margin-bottom: 1rem;"></i>
+        <h3 style="color: var(--success); margin-bottom: 0.5rem;">Subscription Active</h3>
+        <p style="color: var(--text-main); font-size: 0.9rem;">Your parking session is completely covered by your active
+            monthly subscription plan.</p>
+
+        <form action="/api/process_payment" method="POST" style="margin-top: 1.5rem;">
+            <input type="hidden" name="session_id" value="{{ session_rec.id }}">
+            <input type="hidden" name="amount" value="0">
+            <input type="hidden" name="payment_method" value="subscription">
+            <button type="submit" class="btn primary" style="width: 100%;"><i class="fa-solid fa-door-open"></i>
+                Checkout & Open Gate</button>
+        </form>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

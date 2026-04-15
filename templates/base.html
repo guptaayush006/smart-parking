@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking System</title>
+    <!-- Modern Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Load FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <nav class="navbar"
+        style="padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass-border);">
+        <div class="logo" style="font-size: 1.5rem; font-weight: 800; letter-spacing: 1px;">Smart <span
+                style="color: var(--primary);">Parking</span></div>
+        <ul class="nav-links"
+            style="list-style: none; display: flex; gap: 1rem; align-items: center; margin: 0; padding: 0;">
+            {% if session.get('user_id') %}
+            {% if session.get('role') == 'admin' %}
+            <li><a href="/gate_terminal" class="btn primary" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-camera-retro"></i> Gate Terminal</a></li>
+            <li><a href="/admin_dashboard" class="btn" style="padding: 0.5rem 1rem;">Admin Console</a></li>
+            <li><a href="/logout" class="btn"
+                    style="padding: 0.5rem 1rem; border: 1px solid var(--danger); color: var(--danger);">Logout</a></li>
+            {% else %}
+            <!-- New Profile Dropdown Menu -->
+            <li class="dropdown-container" style="position: relative;">
+                <button class="btn primary" id="profileDropdownBtn"
+                    style="display: flex; align-items: center; gap: 0.5rem; border-radius: 20px; padding: 0.4rem 1.2rem;">
+                    <i class="fa-solid fa-user-circle" style="font-size: 1.2rem;"></i> {{ session.get('user_name',
+                    'Menu').split(' ')[0] }} <i class="fa-solid fa-chevron-down"
+                        style="font-size: 0.8rem; margin-left: 0.2rem;"></i>
+                </button>
+                <div id="profileDropdown"
+                    style="display: none; position: absolute; right: 0; top: 120%; background: var(--bg-dark); border: 1px solid var(--glass-border); border-radius: 12px; min-width: 180px; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.5); padding: 0.5rem; text-align: left;">
+                    <a href="/user_dashboard"
+                        style="display: block; padding: 0.8rem 1rem; color: var(--text-main); text-decoration: none; border-radius: 8px; transition: background 0.2s;"><i
+                            class="fa-solid fa-square-parking" style="width: 20px;"></i> Dashboard</a>
+                    <a href="/profile"
+                        style="display: block; padding: 0.8rem 1rem; color: var(--text-main); text-decoration: none; border-radius: 8px; transition: background 0.2s;"><i
+                            class="fa-solid fa-id-card" style="width: 20px;"></i> My Profile</a>
+                    <a href="/wallet"
+                        style="display: block; padding: 0.8rem 1rem; color: var(--text-main); text-decoration: none; border-radius: 8px; transition: background 0.2s;"><i
+                            class="fa-solid fa-wallet" style="color: #fbbf24; width: 20px;"></i> Wallet & Plans</a>
+                    <div style="height: 1px; background: var(--glass-border); margin: 0.3rem 0;"></div>
+                    <a href="/logout"
+                        style="display: block; padding: 0.8rem 1rem; color: var(--danger); text-decoration: none; border-radius: 8px; transition: background 0.2s;"><i
+                            class="fa-solid fa-right-from-bracket" style="width: 20px;"></i> Logout</a>
+                </div>
+            </li>
+            {% endif %}
+            {% else %}
+            <li><a href="/login" class="btn primary"><i class="fa-solid fa-user"></i> Sign In</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <script>
+        // Dropdown toggle logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('profileDropdownBtn');
+            const menu = document.getElementById('profileDropdown');
+            if (btn && menu) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+                });
+                document.addEventListener('click', () => {
+                    menu.style.display = 'none';
+                });
+            }
+        });
+    </script>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

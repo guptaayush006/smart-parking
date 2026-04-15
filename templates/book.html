@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container" style="max-width: 500px; padding: 3rem; margin: 4rem auto; position: relative;">
+    <div
+        style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); background: var(--primary); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-glow);">
+        <i class="fa-solid fa-car" style="font-size: 1.5rem; color: white;"></i>
+    </div>
+
+    <h2 style="text-align: center; margin-top: 1.5rem; margin-bottom: 2.5rem; font-size: 1.8rem;">Reserve a <span
+            style="color: var(--primary);">Slot</span></h2>
+
+    <form id="booking-form" action="/api/bookings" method="POST">
+        <div class="form-group">
+            <label for="name">Driver's Full Name</label>
+            <input type="text" id="name" name="name" required placeholder="e.g. John Doe">
+        </div>
+
+        <div class="form-group">
+            <label for="vehicle_number">Vehicle Registration Number</label>
+            <input type="text" id="vehicle_number" name="vehicle_number" required placeholder="e.g. MH01 AB 1234">
+        </div>
+
+        <div class="form-group" style="display: none;">
+            <input type="hidden" id="book_type" name="book_type" value="hourly">
+        </div>
+
+        <div class="form-group" id="slot-group">
+            <label for="slot_id">Specific Parking Slot</label>
+            <select id="slot_id" name="slot_id" required>
+                <option value="" disabled selected>Loading available map...</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="duration-group">
+            <label for="hours">Duration Expected (Hours)</label>
+            <input type="number" id="hours" name="hours" min="1" max="24" value="1">
+        </div>
+
+        <button type="submit" class="btn primary"
+            style="width: 100%; margin-top: 2rem; padding: 1rem; font-size: 1.1rem;"><i
+                class="fa-solid fa-check-circle"></i> Confirm Reservation</button>
+    </form>
+</div>
+
+<script>
+    document.getElementById('book_type').addEventListener('change', function (e) {
+        const durationGroup = document.getElementById('duration-group');
+        if (e.target.value === 'monthly') {
+            durationGroup.style.display = 'none';
+        } else {
+            durationGroup.style.display = 'block';
+        }
+    });
+
+    // Fetch available slots for selector
+    document.addEventListener('DOMContentLoaded', async () => {
+        const slotSelect = document.getElementById('slot_id');
+        try {
+            const response = await fetch('/api/slots');
+            const slots = await response.json();
+
+            slotSelect.innerHTML = '<option value="" disabled selected>-- Choose an open Slot --</option>';
+            let availableCount = 0;
+
+            slots.forEach(slot => {
+                if (!slot.is_occupied) {
+                    availableCount++;
+                    const option = document.createElement('option');
+                    option.value = slot.id;
+                    option.innerText = `Slot ${slot.name}`;
+                    slotSelect.appendChild(option);
+                }
+            });
+
+            if (availableCount === 0) {
+                slotSelect.innerHTML = '<option value="" disabled selected>No slots currently available</option>';
+            }
+        } catch (e) {
+            console.error(e);
+            slotSelect.innerHTML = '<option value="" disabled selected>Error loading slots</option>';
+        }
+    });
+</script>
+{% endblock %}

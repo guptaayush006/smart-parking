@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container"
+    style="max-width: 1000px; margin: 4rem auto; padding: 3rem; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 16px; animation: fadeInUp 0.5s ease-out;">
+
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <h2 style="font-size: 2.5rem;">Digital <span style="color: var(--success);">Wallet & Plans</span></h2>
+        <p style="color: var(--text-muted); font-size: 1.1rem; margin-top: 0.5rem;">Manage your parking balance and
+            active subscriptions.</p>
+    </div>
+
+    <!-- WALLET SECTION -->
+    <div
+        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4rem; flex-wrap: wrap; gap: 2rem;">
+        <!-- Balance Card -->
+        <div
+            style="flex: 1; min-width: 300px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(0,0,0,0.7)); padding: 2.5rem 2rem; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.4); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.1);">
+            <p
+                style="color: var(--text-muted); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">
+                <i class="fa-solid fa-wallet" style="color: var(--success); margin-right: 0.5rem;"></i> Available
+                Balance
+            </p>
+            <h2 style="font-size: 4rem; color: white; text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);">₹{{
+                "%.2f"|format(user.wallet_balance) }}</h2>
+            <p style="color: var(--success); font-size: 0.95rem; margin-top: 1rem;"><i
+                    class="fa-solid fa-circle-check"></i> Secure Wallet Active</p>
+        </div>
+
+        <!-- Add Funds -->
+        <div
+            style="flex: 1; min-width: 300px; background: rgba(0,0,0,0.3); padding: 2rem; border-radius: 16px; border: 1px dashed var(--glass-border);">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1.3rem;">Top-up Wallet</h3>
+            <form action="/api/add_funds" method="POST" id="addFundsForm">
+                <div class="form-group">
+                    <label style="color: var(--text-muted);">Amount (₹)</label>
+                    <input type="number" name="amount" min="10" max="10000" required placeholder="Enter amount to add"
+                        style="font-size: 1.2rem; padding: 1rem; background: rgba(0,0,0,0.4);">
+                </div>
+                <button type="submit" class="btn primary"
+                    style="width: 100%; padding: 1.1rem; font-size: 1.1rem; border-radius: 8px;"><i
+                        class="fa-solid fa-plus-circle"></i> Add Funds via UPI/Card</button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- SUBSCRIPTION SECTION -->
+    <h3
+        style="margin-bottom: 2rem; font-size: 1.8rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.8rem;">
+        <i class="fa-solid fa-crown" style="color: #fbbf24;"></i> Subscription Plans
+    </h3>
+
+    {% if subscription %}
+    <!-- Active Subscription Details -->
+    <div
+        style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(0,0,0,0.6)); padding: 3rem; border-radius: 16px; border: 1px solid rgba(251, 191, 36, 0.4); text-align: center; box-shadow: inset 0 0 50px rgba(251, 191, 36, 0.05); margin-bottom: 4rem;">
+        <div
+            style="display: inline-block; padding: 0.4rem 1.5rem; background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); border-radius: 30px; font-size: 0.9rem; font-weight: bold; margin-bottom: 1.5rem; letter-spacing: 1px;">
+            ACTIVE PLAN</div>
+        <h3 style="font-size: 3rem; color: white; margin-bottom: 1rem; text-transform: capitalize;">{{
+            subscription.plan_name }} Pass</h3>
+
+        <div style="display: flex; justify-content: center; gap: 3rem; margin: 2rem 0; color: var(--text-main);">
+            <div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase;">Valid From</p>
+                <p style="font-size: 1.2rem; font-weight: 600;">{{ subscription.start_date.split(' ')[0] }}</p>
+            </div>
+            <div style="border-left: 1px solid rgba(255,255,255,0.1);"></div>
+            <div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase;">Valid Until</p>
+                <p style="font-size: 1.2rem; font-weight: 600; color: #fbbf24;">{{ subscription.end_date.split(' ')[0]
+                    }}</p>
+            </div>
+        </div>
+        <p style="color: var(--text-muted); font-size: 1rem;"><i class="fa-solid fa-circle-check"
+                style="color: var(--success);"></i> Automatic 100% discount active on all exit payments.</p>
+    </div>
+    {% else %}
+    <!-- Pricing Plans -->
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; margin-bottom: 4rem;">
+        <!-- Standard -->
+        <div
+            style="flex: 1; min-width: 280px; max-width: 350px; background: rgba(0,0,0,0.3); padding: 2.5rem 2rem; border-radius: 16px; border: 1px solid var(--glass-border); transition: 0.3s; position: relative;">
+            <h3 style="font-size: 1.8rem; margin-bottom: 0.5rem; text-align: center;">Standard</h3>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <span style="font-size: 2.5rem; font-weight: 800; color: white;">₹999</span><span
+                    style="color: var(--text-muted);">/mo</span>
+            </div>
+            <ul style="list-style: none; padding: 0; margin-bottom: 2.5rem; color: var(--text-main); line-height: 2;">
+                <li><i class="fa-solid fa-check" style="color: var(--success); margin-right: 0.5rem;"></i> Unlimited
+                    general parking</li>
+                <li><i class="fa-solid fa-check" style="color: var(--success); margin-right: 0.5rem;"></i> Standard QR
+                    checkout</li>
+                <li><i class="fa-solid fa-xmark" style="color: var(--danger); margin-right: 0.5rem; opacity: 0.5;"></i>
+                    No VIP Zone access</li>
+            </ul>
+            <form action="/api/buy_subscription" method="POST" class="sub-form">
+                <input type="hidden" name="plan" value="standard">
+                <button type="submit" class="btn primary" style="width: 100%; border-radius: 8px; padding: 1rem;">Buy
+                    Standard</button>
+            </form>
+        </div>
+
+        <!-- Premium -->
+        <div
+            style="flex: 1; min-width: 280px; max-width: 350px; background: linear-gradient(180deg, rgba(251, 191, 36, 0.1) 0%, rgba(0,0,0,0.5) 100%); padding: 2.5rem 2rem; border-radius: 16px; border: 2px solid rgba(251, 191, 36, 0.6); transform: scale(1.05); box-shadow: 0 10px 30px rgba(251, 191, 36, 0.15); position: relative;">
+            <div
+                style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #fbbf24; color: black; font-weight: bold; font-size: 0.8rem; padding: 0.3rem 1rem; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;">
+                Recommended</div>
+            <h3 style="font-size: 1.8rem; margin-bottom: 0.5rem; text-align: center; color: #fbbf24;">Premium VIP</h3>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <span style="font-size: 2.5rem; font-weight: 800; color: white;">₹1500</span><span
+                    style="color: var(--text-muted);">/mo</span>
+            </div>
+            <ul style="list-style: none; padding: 0; margin-bottom: 2.5rem; color: var(--text-main); line-height: 2;">
+                <li><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 0.5rem;"></i> Unlimited VIP
+                    parking</li>
+                <li><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 0.5rem;"></i> Automated gate
+                    clearance</li>
+                <li><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 0.5rem;"></i> Priority 24/7
+                    Support</li>
+            </ul>
+            <form action="/api/buy_subscription" method="POST" class="sub-form">
+                <input type="hidden" name="plan" value="premium">
+                <button type="submit" class="btn"
+                    style="width: 100%; border-radius: 8px; background: #fbbf24; color: black; font-weight: bold; border: none; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4); padding: 1rem;">Join
+                    Premium</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+
+    <!-- Transaction History (Moved to bottom) -->
+    <h3
+        style="margin-bottom: 1.5rem; font-size: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.8rem;">
+        <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Recent Transactions
+    </h3>
+
+    {% if transactions %}
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for txn in transactions %}
+        <div
+            style="background: rgba(0,0,0,0.2); padding: 1.2rem 1.5rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid {% if txn.payment_method == 'wallet_load' %}var(--success){% else %}var(--primary){% endif %};">
+            <div>
+                <strong style="font-size: 1.1rem; color: white; display: block; margin-bottom: 0.3rem;">
+                    {% if txn.payment_method == 'wallet_load' %}
+                    Wallet Top-up
+                    {% else %}
+                    Paid for Booking #{{ txn.booking_id }}
+                    {% endif %}
+                </strong>
+                <span style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-calendar"></i> {{
+                    txn.transaction_date.split('.')[0] }}</span>
+            </div>
+            <div style="text-align: right;">
+                <span
+                    style="font-size: 1.2rem; font-weight: bold; color: {% if txn.payment_method == 'wallet_load' %}var(--success){% else %}white{% endif %};">
+                    {% if txn.payment_method == 'wallet_load' %}+{% else %}-{% endif %}₹{{ "%.2f"|format(txn.amount) }}
+                </span>
+                <div
+                    style="font-size: 0.8rem; color: var(--text-muted); text-transform: capitalize; margin-top: 0.2rem;">
+                    {{ txn.payment_method }} • {{ txn.status }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem; background: rgba(0,0,0,0.2); border-radius: 12px;">
+        <i class="fa-solid fa-receipt"
+            style="font-size: 3rem; color: var(--text-muted); opacity: 0.5; margin-bottom: 1rem;"></i>
+        <p style="color: var(--text-muted);">No recent transactions found.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Unified QR Payment Modal -->
+<div id="qrPaymentModal" class="modal-overlay"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 2000; justify-content: center; align-items: center;">
+    <div class="modal-content"
+        style="background: var(--bg-dark); border: 1px solid var(--glass-border); border-radius: 24px; padding: 3rem; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 50px rgba(0,0,0,0.9); position: relative; animation: fadeInUp 0.3s ease-out;">
+        <span class="close-modal" onclick="closeQRModal()"
+            style="position: absolute; top: 1.5rem; right: 2rem; font-size: 2rem; color: var(--text-muted); cursor: pointer; transition: 0.2s;">&times;</span>
+
+        <h3 style="font-size: 1.8rem; margin-bottom: 0.5rem; color: white;">Scan & Pay</h3>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;" id="qr-desc">Complete your payment via UPI to proceed.
+        </p>
+
+        <div id="qr-loading" style="display: block; margin: 2rem 0; color: var(--primary); font-size: 1.2rem;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Generating Secure QR...
+        </div>
+
+        <div id="qr-display"
+            style="display: none; background: rgba(0,0,0,0.4); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px dashed var(--glass-border);">
+            <img id="qr-img" src=""
+                style="width: 200px; height: 200px; border-radius: 8px; border: 4px solid white; box-shadow: 0 0 15px rgba(255,255,255,0.2);">
+            <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.95rem;">UPI ID: <strong
+                    style="color: white; letter-spacing: 0.5px;">guptaayush122006@axl</strong></p>
+            <h4 style="margin-top: 0.5rem; color: var(--success); font-size: 1.8rem;" id="qr-amount-text"></h4>
+        </div>
+
+        <button id="qr-confirm-btn" class="btn primary" onclick="submitPendingForm()"
+            style="width: 100%; padding: 1.2rem; font-size: 1.1rem; border-radius: 12px; background: var(--success); border-color: var(--success); display: none;"><i
+                class="fa-solid fa-check-circle"></i> Complete Payment</button>
+    </div>
+</div>
+
+<script>
+    let pendingForm = null;
+
+    function openQRModal(amount, description, formElement) {
+        pendingForm = formElement;
+
+        document.getElementById('qrPaymentModal').style.display = 'flex';
+        document.getElementById('qr-desc').innerText = description;
+        document.getElementById('qr-loading').style.display = 'block';
+        document.getElementById('qr-display').style.display = 'none';
+        document.getElementById('qr-confirm-btn').style.display = 'none';
+
+        fetch('/api/generate_qr?amount=' + amount)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('qr-img').src = 'data:image/png;base64,' + data.qr;
+                document.getElementById('qr-amount-text').innerText = '₹' + amount;
+
+                document.getElementById('qr-loading').style.display = 'none';
+                document.getElementById('qr-display').style.display = 'block';
+                document.getElementById('qr-confirm-btn').style.display = 'block';
+            });
+    }
+
+    function closeQRModal() {
+        document.getElementById('qrPaymentModal').style.display = 'none';
+        pendingForm = null;
+    }
+
+    function submitPendingForm() {
+        if (pendingForm) {
+            document.getElementById('qr-confirm-btn').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+            pendingForm.submit();
+        }
+    }
+
+    document.getElementById('addFundsForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const amount = this.querySelector('input[name="amount"]').value;
+        openQRModal(amount, 'Top-up Wallet Balance', this);
+    });
+
+    document.querySelectorAll('.sub-form').forEach(form => {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const plan = this.querySelector('input[name="plan"]').value;
+            const amount = plan === 'premium' ? 1500 : 999;
+            openQRModal(amount, `Subscribe to ${plan.toUpperCase()} VIP Plan`, this);
+        });
+    });
+
+    // Close modal on outside click
+    window.onclick = function (event) {
+        if (event.target == document.getElementById('qrPaymentModal')) {
+            closeQRModal();
+        }
+    }
+</script>
+{% endblock %}

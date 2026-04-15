@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Dashboard Styles */
+    .dashboard-stats {
+        display: flex;
+        gap: 2rem;
+        justify-content: center;
+        margin: 2rem 0;
+        flex-wrap: wrap;
+    }
+
+    .stat-box {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 1.5rem 3rem;
+        border-radius: 12px;
+        border: 1px solid var(--glass-border);
+        text-align: center;
+        min-width: 200px;
+    }
+
+    .stat-value {
+        font-size: 3rem;
+        font-weight: 800;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+
+    /* Slot Grid */
+    .slot-grid-container {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 2rem;
+        border-radius: 16px;
+        border: 1px solid var(--glass-border);
+        margin-bottom: 4rem;
+    }
+
+    .slot-grid {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 0.8rem;
+        margin-top: 1.5rem;
+    }
+
+    .slot-box {
+        background: rgba(0, 0, 0, 0.4);
+        border: 2px solid var(--glass-border);
+        border-radius: 10px;
+        padding: 1rem 0;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .slot-box.available {
+        border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .slot-box.available:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(16, 185, 129, 0.2);
+        background: rgba(16, 185, 129, 0.1);
+        border-color: var(--success);
+    }
+
+    .slot-box.occupied {
+        border-color: rgba(239, 68, 68, 0.3);
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .slot-box.user-active {
+        border-color: rgba(245, 158, 11, 0.6);
+        opacity: 1;
+        cursor: pointer;
+    }
+
+    .slot-box.user-active:hover {
+        background: rgba(245, 158, 11, 0.1);
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(245, 158, 11, 0.2);
+    }
+
+    .slot-id {
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin-top: 0.4rem;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(8px);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-content {
+        background: var(--bg-dark);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 3rem;
+        width: 90%;
+        max-width: 550px;
+        box-shadow: 0 10px 50px rgba(0, 0, 0, 0.9);
+        position: relative;
+        animation: fadeInUp 0.3s ease-out;
+    }
+
+    .close-modal {
+        position: absolute;
+        top: 1.5rem;
+        right: 2rem;
+        font-size: 2rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .close-modal:hover {
+        color: white;
+    }
+
+    /* Vehicle Options */
+    .vehicle-options {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .vehicle-card {
+        flex: 1;
+        text-align: center;
+        padding: 1.5rem 1rem;
+        border: 2px solid var(--glass-border);
+        border-radius: 16px;
+        cursor: pointer;
+        transition: 0.2s;
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .vehicle-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .vehicle-card.selected {
+        border-color: var(--primary);
+        background: rgba(from var(--primary) r g b / 0.1);
+        box-shadow: inset 0 0 20px rgba(from var(--primary) r g b / 0.1);
+        transform: scale(1.05);
+    }
+
+    .v-icon {
+        font-size: 3rem;
+        margin-bottom: 0.8rem;
+        display: block;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    }
+
+    .v-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: white;
+        margin-bottom: 0.3rem;
+    }
+
+    .v-price {
+        font-size: 0.9rem;
+        color: var(--success);
+        font-weight: 600;
+    }
+</style>
+
+<div class="dashboard-stats">
+    <div class="stat-box">
+        <div class="stat-value">{{ total_slots }}</div>
+        <div class="stat-label">Total Capability</div>
+    </div>
+    <div class="stat-box" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.3);">
+        <div class="stat-value" style="color: var(--success);">{{ available_slots }}</div>
+        <div class="stat-label" style="color: var(--success);">Spots Available Now</div>
+    </div>
+    <div class="stat-box" style="background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.3);">
+        <div class="stat-value" style="color: #3b82f6;">₹{{ "%.2f"|format(user.wallet_balance) }}</div>
+        <div class="stat-label" style="color: #3b82f6;">Wallet Balance</div>
+    </div>
+    <div class="stat-box" style="background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.3);">
+        <div class="stat-value"
+            style="color: #f59e0b; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; height: 3.5rem;">
+            {% if subscription %}
+            {{ subscription.plan_name | capitalize }} VIP
+            {% else %}
+            Free User
+            {% endif %}
+        </div>
+        <div class="stat-label" style="color: #f59e0b;">Subscription Tier</div>
+    </div>
+</div>
+
+<div class="slot-grid-container">
+    <h2 style="text-align: center; margin-bottom: 1rem; font-size: 2rem;">Select Your <span
+            style="color: var(--primary);">Parking Slot</span></h2>
+    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Click on any green available slot to
+        begin booking.</p>
+
+    <div class="slot-grid">
+        {% for slot in slots %}
+        {% set active_b = namespace(id=None) %}
+        {% for b in bookings %}{% if b.status == 'active' and b.slot_id == slot.id %}{% set active_b.id = b.id %}{% endif %}{% endfor %}
+        
+        {% if slot.is_occupied %}
+            {% if active_b.id %}
+            <form id="checkout-form-{{ active_b.id }}" action="/api/user_checkout/{{ active_b.id }}" method="POST" style="display: none;"></form>
+            <div class="slot-box user-active" title="Your Booking - Click to Checkout" data-slot-id="{{ slot.id }}" onclick="if(confirm('Proceed to checkout and free Slot {{ slot.name }}?')) document.getElementById('checkout-form-{{ active_b.id }}').submit();">
+                <i class="fa-solid fa-car-side" style="color: #f59e0b; font-size: 1.8rem;"></i>
+                <div class="slot-id" style="color: #f59e0b;">{{ slot.name }}</div>
+                <div style="font-size: 0.7rem; color: #f59e0b; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px;">CHECKOUT</div>
+            </div>
+            {% else %}
+            <div class="slot-box occupied" title="Slot Occupied" data-slot-id="{{ slot.id }}">
+                <i class="fa-solid fa-car-side" style="color: var(--danger); font-size: 1.8rem;"></i>
+                <div class="slot-id" style="color: var(--danger);">{{ slot.name }}</div>
+            </div>
+            {% endif %}
+        {% else %}
+        <div class="slot-box available" onclick="openBookingModal('{{ slot.id }}', '{{ slot.name }}')"
+            data-slot-id="{{ slot.id }}">
+            <i class="fa-solid fa-square-parking" style="color: var(--success); font-size: 1.8rem;"></i>
+            <div class="slot-id" style="color: white;">{{ slot.name }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Interactive Booking Modal -->
+<div id="bookingModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeBookingModal()">&times;</span>
+        <h2 style="margin-bottom: 0.5rem; text-align: center; font-size: 2.2rem;">Book Slot <span id="modal-slot-name"
+                style="color: var(--primary);"></span></h2>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 2.5rem;">Secure your reservation
+            instantly.</p>
+
+        <form action="/api/bookings" method="POST" id="modalBookingForm">
+            <input type="hidden" name="slot_id" id="modal-slot-id">
+            <input type="hidden" name="vehicle_type" id="modal-vehicle-type" value="car">
+            <input type="hidden" name="book_type" value="hourly">
+            <!-- Default to hourly, auto-upgrades if subscribed -->
+
+            <div style="margin-bottom: 1rem; color: var(--text-main); font-weight: 600;"><i class="fa-solid fa-1"
+                    style="color: var(--primary); margin-right: 0.5rem;"></i> Select Vehicle Type</div>
+            <div class="vehicle-options">
+                <div class="vehicle-card" onclick="selectVehicle('motorcycle')" id="card-motorcycle">
+                    <span class="v-icon">🏍️</span>
+                    <div class="v-title">Motorcycle</div>
+                    <div class="v-price">₹20 / hour</div>
+                </div>
+                <div class="vehicle-card selected" onclick="selectVehicle('car')" id="card-car">
+                    <span class="v-icon">🚗</span>
+                    <div class="v-title">Car</div>
+                    <div class="v-price">₹50 / hour</div>
+                </div>
+                <div class="vehicle-card" onclick="selectVehicle('truck')" id="card-truck">
+                    <span class="v-icon">🚚</span>
+                    <div class="v-title">Truck Info</div>
+                    <div class="v-price">₹100 / hour</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem; margin-bottom: 1rem; color: var(--text-main); font-weight: 600;">
+                <i class="fa-solid fa-2" style="color: var(--primary); margin-right: 0.5rem;"></i> Vehicle Identification
+            </div>
+            
+            {% if user.vehicle_number %}
+            <div id="selection-container" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <!-- Saved Vehicle Card -->
+                <div class="vehicle-card selected" id="opt-saved" onclick="useSavedVehicle()" style="position: relative; border-color: var(--success); overflow: hidden;">
+                    <div id="countdown-bar" style="position: absolute; bottom: 0; left: 0; height: 4px; background: var(--success); width: 100%; transition: width 5s linear;"></div>
+                    <i class="fa-solid fa-circle-check" style="position: absolute; top: 0.5rem; right: 0.5rem; color: var(--success);"></i>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.3rem;">Saved Vehicle</div>
+                    <div style="font-size: 1.2rem; font-weight: 800; color: white; letter-spacing: 1px;">{{ user.vehicle_number | upper }}</div>
+                    <div id="timer-text" style="font-size: 0.65rem; color: var(--success); margin-top: 0.5rem; font-weight: bold;">Auto-selecting in 5s...</div>
+                </div>
+                
+                <!-- New Vehicle Option -->
+                <div class="vehicle-card" id="opt-new" onclick="showNewVehicleInput()">
+                    <i class="fa-solid fa-plus" style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--primary);"></i>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">Use Different</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div id="new-vehicle-input-group" class="form-group" style="{% if user.vehicle_number %}display: none;{% endif %} margin-top: 0.5rem;">
+                <input type="text" id="modal-vehicle-number" name="vehicle_number"
+                    value="{{ user.vehicle_number if user.vehicle_number else '' }}" required
+                    placeholder="ENTER VEHICLE NO. (e.g. MH01 AB 1234)"
+                    style="font-size: 1.1rem; padding: 1.1rem; text-transform: uppercase; border: 2px solid var(--glass-border); background: rgba(0,0,0,0.3); letter-spacing: 2px;">
+            </div>
+
+            <button type="submit" class="btn primary"
+                style="width: 100%; padding: 1.2rem; font-size: 1.2rem; margin-top: 1rem; border-radius: 12px; box-shadow: var(--shadow-glow);"><i
+                    class="fa-solid fa-lock"></i> Confirm & Reserve</button>
+        </form>
+    </div>
+</div>
+
+<!-- Secondary Info Row (History & Subscriptions) -->
+<div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+    <!-- Active/History Bookings -->
+    <div class="form-container" style="flex: 2; margin: 0; min-width: 300px; padding: 2rem;">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+            <h3 style="font-size: 1.5rem;"><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i>
+                Recent Activity</h3>
+        </div>
+        {% if bookings %}
+        <div
+            style="display: flex; flex-direction: column; gap: 1.2rem; max-height: 400px; overflow-y: auto; padding-right: 10px;">
+            {% for b in bookings %}
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 1.2rem 1.5rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid {% if b.status == 'active' %}var(--success){% else %}var(--text-muted){% endif %}; transition: transform 0.2s;">
+                <div>
+                    <strong
+                        style="font-size: 1.3rem; color: var(--text-main); display: block; margin-bottom: 0.3rem;">Slot
+                        <span style="color: var(--primary);">{{ b.slot_name }}</span></strong>
+                    <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.2rem;"><i
+                            class="fa-solid fa-car-side"></i> Vehicle: <span
+                            style="text-transform: capitalize; color: white;">{{ b.vehicle_type }}</span></div>
+                    <div style="color: var(--text-muted); font-size: 0.8rem;"><i class="fa-solid fa-money-bill"></i>
+                        Rate applied at checkout</div>
+                </div>
+                <div
+                    style="text-align: right; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 0.5rem;">
+                    <span class="{% if b.status == 'active' %}badge available{% else %}badge occupied{% endif %}">{{
+                        b.status | capitalize }}</span>
+                    {% if b.status == 'active' %}
+                    <form action="/api/user_checkout/{{ b.id }}" method="POST" style="margin: 0;">
+                        <button type="submit" class="btn primary"
+                            style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.3rem 0.8rem; font-size: 0.85rem; border-radius: 6px; box-shadow: none;"><i
+                                class="fa-solid fa-arrow-right-from-bracket"></i> Checkout</button>
+                    </form>
+                    {% else %}
+                    <div style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-regular fa-calendar"></i> {{
+                        b.start_time.split(' ')[0] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div
+            style="text-align: center; padding: 3rem; color: var(--text-muted); background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed var(--glass-border);">
+            <i class="fa-solid fa-ticket" style="font-size: 3.5rem; margin-bottom: 1.5rem; opacity: 0.3;"></i>
+            <p style="font-size: 1.1rem; color: var(--text-main);">No history found.</p>
+            <p style="font-size: 0.9rem;">Book a slot from the grid above to get started.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+        let countdownInterval = null;
+        let timeLeft = 5;
+        const savedNumber = "{{ user.vehicle_number if user.vehicle_number else '' }}";
+
+        function openBookingModal(id, name) {
+            document.getElementById('modal-slot-id').value = id;
+            document.getElementById('modal-slot-name').innerText = name;
+            document.getElementById('bookingModal').style.display = 'flex';
+            
+            if (savedNumber) {
+                startCountdown();
+            }
+        }
+
+        function startCountdown() {
+            timeLeft = 5;
+            const bar = document.getElementById('countdown-bar');
+            const timerTxt = document.getElementById('timer-text');
+            const optSaved = document.getElementById('opt-saved');
+            const inputGroup = document.getElementById('new-vehicle-input-group');
+            const inputField = document.getElementById('modal-vehicle-number');
+
+            if (bar) bar.style.width = '100%';
+            if (timerTxt) timerTxt.innerText = `Auto-selecting in 5s...`;
+            
+            // Trigger animation
+            setTimeout(() => { if(bar) bar.style.width = '0%'; }, 50);
+
+            clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                if (timerTxt) timerTxt.innerText = `Auto-selecting in ${timeLeft}s...`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    if (timerTxt) timerTxt.innerText = "Saved Vehicle Active";
+                    if (bar) bar.style.display = 'none';
+                    // We don't auto-submit, just keep the saved one selected.
+                }
+            }, 1000);
+        }
+
+        function useSavedVehicle() {
+            stopCountdown();
+            document.getElementById('opt-saved').classList.add('selected');
+            document.getElementById('opt-new').classList.remove('selected');
+            document.getElementById('new-vehicle-input-group').style.display = 'none';
+            document.getElementById('modal-vehicle-number').value = savedNumber;
+            document.getElementById('timer-text').innerText = "Saved Vehicle Selected";
+        }
+
+        function showNewVehicleInput() {
+            stopCountdown();
+            document.getElementById('opt-saved').classList.remove('selected');
+            document.getElementById('opt-new').classList.add('selected');
+            document.getElementById('new-vehicle-input-group').style.display = 'block';
+            document.getElementById('modal-vehicle-number').value = "";
+            document.getElementById('modal-vehicle-number').focus();
+        }
+
+        function stopCountdown() {
+            clearInterval(countdownInterval);
+            const bar = document.getElementById('countdown-bar');
+            const timerTxt = document.getElementById('timer-text');
+            if (bar) bar.style.display = 'none';
+            if (timerTxt) timerTxt.innerText = "Manual Selection Mode";
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+            stopCountdown();
+        }
+
+        function selectVehicle(type) {
+            document.getElementById('modal-vehicle-type').value = type;
+            document.querySelectorAll('.vehicle-card').forEach(el => {
+                // Don't remove selected if it's the vehicle option ones
+                if(el.id.startsWith('card-')) el.classList.remove('selected');
+            });
+            document.getElementById('card-' + type).classList.add('selected');
+        }
+
+        // Close modal on outside click
+        window.onclick = function (event) {
+            if (event.target == document.getElementById('bookingModal')) {
+                closeBookingModal();
+            }
+        }
+    </script>
+    {% endblock %}

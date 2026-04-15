@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container"
+    style="max-width: 450px; text-align: center; margin: 4rem auto; padding: 3rem 2rem; border-top: 4px solid var(--primary); position: relative; overflow: hidden;">
+    <!-- Abstract ticket design background -->
+    <div
+        style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: var(--primary-light); border-radius: 50%; filter: blur(30px);">
+    </div>
+    <div
+        style="position: absolute; bottom: -50px; left: -50px; width: 100px; height: 100px; background: var(--success-light); border-radius: 50%; filter: blur(30px);">
+    </div>
+
+    <h2 style="margin-bottom: 2rem; font-size: 1.8rem; letter-spacing: 1px;"><i class="fa-solid fa-receipt"
+            style="color: var(--primary); margin-right: 0.5rem;"></i> Parking <span
+            style="color: var(--primary);">Ticket</span></h2>
+
+    <div id="receipt-details"
+        style="display: none; background: rgba(0,0,0,0.4); padding: 2rem; border-radius: 16px; border: 1px dashed var(--glass-border); position: relative; z-index: 2;">
+
+        <div style="margin-bottom: 2rem; color: var(--text-muted); font-size: 0.95rem;">
+            Successfully generated parking pass.
+        </div>
+
+        <div id="qr-container" style="display: block;">
+            <div
+                style="background: white; padding: 0.5rem; border-radius: 12px; display: inline-block; margin-bottom: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <img id="r-qr" src="" alt="Gate QR Code"
+                    style="width: 180px; height: 180px; display: block; filter: contrast(1.2);">
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; padding: 0 1rem;">Show this QR / Ticket at the exit
+                gate to leave securely.</p>
+        </div>
+
+    </div>
+
+    <div id="loading" style="color: var(--text-muted); padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"
+            style="font-size: 2rem; margin-bottom: 1rem;"></i><br>Generating secure receipt...</div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('id');
+
+        if (sessionId) {
+            try {
+                const response = await fetch(`/api/receipt/${sessionId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('receipt-details').style.display = 'block';
+
+                    // Only populate the QR code cleanly
+                    document.getElementById('r-qr').src = `data:image/png;base64,${data.qr_code}`;
+
+                    document.getElementById('r-qr').src = `data:image/png;base64,${data.qr_code}`;
+                } else {
+                    document.getElementById('loading').innerText = 'Receipt not found.';
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loading').innerText = 'Error loading receipt.';
+            }
+        } else {
+            document.getElementById('loading').innerText = 'No receipt ID provided.';
+        }
+    });
+</script>
+{% endblock %}

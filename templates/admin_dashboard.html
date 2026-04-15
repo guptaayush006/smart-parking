@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Admin <span style="color: var(--primary);">Terminal</span></h1>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .slot-grid {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 0.8rem;
+        margin-top: 1.5rem;
+    }
+
+    .slot-box {
+        background: rgba(0, 0, 0, 0.4);
+        border: 2px solid var(--glass-border);
+        border-radius: 10px;
+        padding: 1rem 0;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .slot-box.available {
+        border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .slot-box.occupied {
+        border-color: rgba(239, 68, 68, 0.3);
+        opacity: 0.6;
+    }
+
+    .slot-id {
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin-top: 0.4rem;
+        letter-spacing: 1px;
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: rgba(0,0,0,0.2);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--glass-border);
+    }
+    
+    .admin-table th, .admin-table td {
+        padding: 1rem 1.5rem;
+        text-align: left;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .admin-table th {
+        background: rgba(255,255,255,0.05);
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+    
+    .admin-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .admin-table tr:hover {
+        background: rgba(255,255,255,0.03);
+    }
+    
+    .tab-btn {
+        background: rgba(255,255,255,0.05) !important;
+        color: var(--text-muted) !important;
+        border: 1px solid var(--glass-border) !important;
+        transition: all 0.3s ease;
+    }
+    
+    .tab-btn.active {
+        background: var(--primary) !important;
+        color: white !important;
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+    }
+</style>
+
+<!-- TOP ANALYTICS HIGHLIGHTS -->
+<div style="display: flex; gap: 1.5rem; margin-bottom: 3rem; flex-wrap: wrap;">
+    <!-- Revenue Widget -->
+    <div
+        style="flex: 1; min-width: 200px; background: linear-gradient(135deg, rgba(79, 70, 229, 0.4), rgba(9, 9, 11, 0.8)); padding: 2rem; border-radius: 16px; border: 1px solid rgba(79, 70, 229, 0.3); box-shadow: var(--shadow-md); backdrop-filter: blur(10px);">
+        <h3
+            style="color: var(--text-muted); font-size: 0.9rem; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.8rem;">
+            <i class="fa-solid fa-indian-rupee-sign" style="color: var(--primary);"></i> Total Revenue
+        </h3>
+        <p style="font-size: 2.8rem; font-weight: 800; color: white;">₹{{ "%.2f"|format(total_revenue) }}</p>
+    </div>
+
+    <!-- Active Vehicles Widget -->
+    <div
+        style="flex: 1; min-width: 200px; background: var(--card-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--glass-border); box-shadow: var(--shadow-md); backdrop-filter: blur(10px);">
+        <h3
+            style="color: var(--text-muted); font-size: 0.9rem; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.8rem;">
+            <i class="fa-solid fa-car" style="color: var(--success);"></i> Active Vehicles
+        </h3>
+        <p style="font-size: 2.8rem; font-weight: 800; color: var(--success);">{{ active_sessions | length }}</p>
+    </div>
+
+    <!-- Total Users Widget -->
+    <div
+        style="flex: 1; min-width: 200px; background: var(--card-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--glass-border); box-shadow: var(--shadow-md); backdrop-filter: blur(10px);">
+        <h3
+            style="color: var(--text-muted); font-size: 0.9rem; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.8rem;">
+            <i class="fa-solid fa-users" style="color: var(--primary);"></i> Users
+        </h3>
+        <p style="font-size: 2.8rem; font-weight: 800; color: white;">{{ total_users }}</p>
+    </div>
+
+    <!-- Total Bookings Widget -->
+    <div
+        style="flex: 1; min-width: 200px; background: var(--card-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--glass-border); box-shadow: var(--shadow-md); backdrop-filter: blur(10px);">
+        <h3
+            style="color: var(--text-muted); font-size: 0.9rem; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.8rem;">
+            <i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Bookings
+        </h3>
+        <p style="font-size: 2.8rem; font-weight: 800; color: white;">{{ total_bookings }}</p>
+    </div>
+</div>
+
+<!-- TAB NAVIGATION -->
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1.5rem; overflow-x: auto;">
+    <button class="btn tab-btn active" id="tab-btn-map" onclick="switchTab('map')"><i class="fa-solid fa-map-location-dot"></i> Live Map</button>
+    <button class="btn tab-btn" id="tab-btn-users" onclick="switchTab('users')"><i class="fa-solid fa-users-gear"></i> Users & Logs</button>
+    <button class="btn tab-btn" id="tab-btn-analytics" onclick="switchTab('analytics')"><i class="fa-solid fa-chart-area"></i> Revenue & History</button>
+</div>
+
+<div id="section-map" class="admin-tab-content">
+    <!-- 50 SLOTS GRID -->
+    <div style="flex: 2; min-width: 400px;">
+        <h2 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-grip"></i> Live Parking Map (50 Slots)</h2>
+        <div class="slot-grid">
+            {% for slot in slots %}
+            {% if slot.is_occupied %}
+            <div class="slot-box occupied" title="Slot Occupied" data-slot-id="{{ slot.id }}">
+                <i class="fa-solid fa-car-side" style="color: var(--danger); font-size: 1.8rem;"></i>
+                <div class="slot-id" style="color: var(--danger);">{{ slot.name }}</div>
+            </div>
+            {% else %}
+            <div class="slot-box available" data-slot-id="{{ slot.id }}">
+                <i class="fa-solid fa-square-parking" style="color: var(--success); font-size: 1.8rem;"></i>
+                <div class="slot-id" style="color: white;">{{ slot.name }}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- OPERATIONS SIDEBAR -->
+    <div
+        style="flex: 1; min-width: 300px; background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 12px; height: fit-content; border: 1px solid var(--glass-border);">
+
+        <!-- Simulate Barrier Option - Soft replacement for the full Toll UI -->
+        <h3 style="color: var(--primary); margin-bottom: 1rem;"><i class="fa-solid fa-bridge"></i> Gate Simulation (API
+            Tool)</h3>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">Use this to quickly test vehicle
+            entries/exits from the admin panel directly.</p>
+        <form style="display:flex; gap:0.5rem; margin-bottom: 2rem;">
+            <input type="text" id="sim-vehicle" placeholder="Enter Vehicle No."
+                style="flex:1; padding: 0.5rem; border-radius: 4px; border: none;">
+            <button type="button" class="btn primary" style="padding: 0.5rem;"
+                onclick="simulateGate('entry')">Entry</button>
+            <button type="button" class="btn" style="padding: 0.5rem; background: var(--text-muted);"
+                onclick="simulateGate('exit')">Exit</button>
+        </form>
+
+        <h3 style="color: var(--danger); margin-bottom: 1rem;"><i class="fa-solid fa-triangle-exclamation"></i>
+            Emergency Slot Operations</h3>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">If a vehicle leaves without
+            checking out through the toll gate, you can force free the slot assigned to their booking here.</p>
+
+        <form id="force-free-form" method="POST" action="">
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <select id="force-slot-select" name="slot_id" required
+                    style="padding: 0.5rem; width: 100%; border-radius: 4px;">
+                    <option value="" disabled selected>-- Select Occupied Slot --</option>
+                    {% for slot in slots %}
+                    {% if slot.is_occupied %}
+                    <option value="{{ slot.id }}">Slot {{ slot.name }} (Occupied)</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn"
+                style="width: 100%; padding: 0.5rem; background: var(--danger); color: white;">Force Free Slot</button>
+        </form>
+
+        <h3 style="color: var(--primary); margin-top: 2.5rem; margin-bottom: 1rem;"><i
+                class="fa-solid fa-clock-rotate-left"></i> Real-time Active Sessions</h3>
+        {% if active_sessions %}
+        <div style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
+            {% for sess in active_sessions %}
+            <div
+                style="background: var(--card-bg); padding: 0.8rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.9rem; border-left: 3px solid var(--success);">
+                <strong>{{ sess.vehicle_number }}</strong>
+                <div style="color: var(--text-muted); font-size: 0.8rem;">Entered: {{ sess.entry_time.split('.')[0] }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Parking lot is currently empty.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- NEW: TRENDS & ANALYTICS SECTION -->
+<div id="section-analytics" class="admin-tab-content" style="display: none; flex-direction: column;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="color: var(--text-main); font-size: 1.5rem; margin:0;"><i class="fa-solid fa-chart-area" style="color: var(--primary); margin-right: 0.5rem;"></i> Metrics & Trends</h3>
+        <div style="display: flex; gap: 0.5rem;">
+            <select id="chartType" onchange="updateChartType()" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none; transition: 0.3s; cursor: pointer;">
+                <option value="line">Line Visualization</option>
+                <option value="bar">Bar Visualization</option>
+                <option value="pie">Fee Channels (Doughnut)</option>
+            </select>
+        </div>
+    </div>
+        <div style="background: rgba(0,0,0,0.5); padding: 1.5rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+            <div style="height: 240px; width: 100%; position: relative;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+        
+        <div style="margin-top: 3rem; display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.2rem; border-top: 1px solid var(--glass-border); padding-top: 2rem;">
+            <h3 style="color: var(--text-main); font-size: 1.1rem;"><i class="fa-solid fa-list-ul" style="color: var(--primary); margin-right: 0.5rem;"></i> Detailed Transaction History</h3>
+            <div style="display: flex; gap: 0.8rem;">
+                <input type="text" id="transactionSearch" placeholder="Search user/email..." onkeyup="filterTransactionTable()" 
+                    style="background: var(--bg-dark); color: white; border: 1px solid var(--glass-border); padding: 0.4rem 1rem; border-radius: 6px; font-size: 0.85rem; width: 220px;">
+                <select id="transactionMethodFilter" onchange="filterTransactionTable()" 
+                    style="background: var(--bg-dark); color: white; border: 1px solid var(--glass-border); padding: 0.4rem; border-radius: 6px; font-size: 0.85rem;">
+                    <option value="">All Methods</option>
+                    <option value="upi">UPI</option>
+                    <option value="wallet">Wallet</option>
+                    <option value="admin_credit">Admin Credit</option>
+                </select>
+            </div>
+        </div>
+        <div style="max-height: 400px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--glass-border);">
+            <table class="admin-table" id="transactionTable">
+                <thead style="position: sticky; top: 0; z-index: 10;">
+                    <tr>
+                        <th>User</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Date & Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for th in transaction_history %}
+                    <tr>
+                        <td>
+                            <strong style="color: white; display: block;">{{ th.user_name or 'System' }}</strong>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ th.user_email or 'N/A' }}</span>
+                        </td>
+                        <td style="color: var(--success); font-weight: bold;">₹{{ "%.2f"|format(th.amount) }}</td>
+                        <td><span class="badge" style="background: rgba(255,255,255,0.1); color: white;">{{ th.payment_method | upper }}</span></td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">{{ th.transaction_date.split('.')[0] }}</td>
+                        <td><span style="color: #86efac;">● {{ th.status | capitalize }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No transactions recorded.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- NEW: USER MANAGEMENT DIRECTORY -->
+<div id="section-users" class="admin-tab-content" style="display: none; margin-bottom: 3rem;">
+    <h3 style="margin-bottom: 1.5rem; color: var(--text-main); font-size: 1.5rem;"><i class="fa-solid fa-users-gear" style="color: var(--primary); margin-right: 0.5rem;"></i> Identity & Access Management</h3>
+    
+    <div style="overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>User / Contact</th>
+                    <th>Vehicle Pl.</th>
+                    <th>Status</th>
+                    <th>Wallet Balance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users_list %}
+                <tr>
+                    <td>
+                        <strong style="display: block; color: white;">
+                            {{ u.name }}
+                            {% if u.role == 'admin' %}
+                            <span style="font-size:0.7rem; background: var(--primary); color: white; padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.5rem; text-transform:uppercase;">Admin</span>
+                            {% endif %}
+                        </strong>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">{{ u.email }} | {{ u.phone or 'No Ph' }}</span>
+                    </td>
+                    <td>
+                        {% if u.vehicle_number %}
+                        <span style="background: rgba(255,255,255,0.1); padding: 0.3rem 0.6rem; border-radius: 4px; font-weight: bold; letter-spacing: 1px;">{{ (u.vehicle_number or '') | upper }}</span>
+                        {% else %}
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">None</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.is_blocked %}
+                        <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">Blocked</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #86efac; border: 1px solid rgba(16, 185, 129, 0.4);">Active</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong style="color: var(--success); font-size: 1.1rem;">₹{{ "%.2f"|format(u.wallet_balance) }}</strong>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <!-- Adding Funds Form -->
+                            <form action="/api/admin/add_funds/{{ u.id }}" method="POST" style="margin: 0; display: flex; align-items: center; gap: 0.3rem;">
+                                <input type="number" name="amount" placeholder="₹ Amt" required min="1"
+                                    style="width: 70px; padding: 0.4rem; border-radius: 6px; border: 1px solid var(--glass-border); background: var(--bg-dark); color: white; font-size: 0.85rem;">
+                                <button type="submit" class="btn primary" style="padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.85rem;" title="Credit Wallet"><i class="fa-solid fa-plus"></i></button>
+                            </form>
+                            
+                            <!-- Block/Unblock Form -->
+                            <form action="/api/admin/toggle_block/{{ u.id }}" method="POST" style="margin: 0; display: flex; align-items: center;">
+                                <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; background: {% if u.is_blocked %}var(--success){% else %}rgba(239, 68, 68, 0.8){% endif %}; color: white; border: none;">
+                                    {% if u.is_blocked %}<i class="fa-solid fa-unlock"></i> Unblock{% else %}<i class="fa-solid fa-ban"></i> Block{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">No users found in database.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div> <!-- Close Identity Management section -->
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin: 2.5rem 0 1.2rem 0;">
+        <h3 style="color: var(--text-main); font-size: 1.5rem; margin: 0;"><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary); margin-right: 0.5rem;"></i> Global Parking Session History</h3>
+        <div style="display: flex; gap: 0.8rem;">
+            <input type="text" id="parkingSearch" placeholder="Search vehicle/driver..." onkeyup="filterParkingTable()" 
+                style="background: var(--bg-dark); color: white; border: 1px solid var(--glass-border); padding: 0.4rem 1rem; border-radius: 6px; font-size: 0.85rem; width: 220px;">
+            <select id="parkingStatusFilter" onchange="filterParkingTable()" 
+                style="background: var(--bg-dark); color: white; border: 1px solid var(--glass-border); padding: 0.4rem; border-radius: 6px; font-size: 0.85rem;">
+                <option value="">All Status</option>
+                <option value="inside">Inside</option>
+                <option value="out">Out</option>
+            </select>
+        </div>
+    </div>
+    <div style="max-height: 500px; overflow-y: auto; border-radius: 12px; border: 1px solid var(--glass-border);">
+        <table class="admin-table" id="parkingTable">
+            <thead style="position: sticky; top: 0; z-index: 10;">
+                <tr>
+                    <th>Vehicle & Driver</th>
+                    <th>Entry Time</th>
+                    <th>Exit Time</th>
+                    <th>Duration/Cost</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ph in parking_history %}
+                <tr>
+                    <td>
+                        <strong style="color: white; display: block;">{{ ph.vehicle_number | upper }}</strong>
+                        <span style="font-size: 0.8rem; color: var(--primary);">{{ ph.user_name or 'Guest/Walk-in' }}</span>
+                    </td>
+                    <td style="font-size: 0.85rem;">{{ ph.entry_time.split('.')[0] if ph.entry_time else 'N/A' }}</td>
+                    <td style="font-size: 0.85rem;">{{ ph.exit_time.split('.')[0] if ph.exit_time else '--' }}</td>
+                    <td>
+                        {% if ph.cost %}
+                        <strong style="color: var(--success);">₹{{ "%.2f"|format(ph.cost) }}</strong>
+                        {% else %}
+                        <span style="color: var(--text-muted);">In Progress</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if ph.status == 'completed' %}
+                        <span style="color: #86efac; font-size: 0.85rem;"><i class="fa-solid fa-circle-check"></i> Out</span>
+                        {% else %}
+                        <span style="color: var(--primary); font-size: 0.85rem;"><i class="fa-solid fa-circle-dot"></i> Inside</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No parking history found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        // Hide all contents
+        document.querySelectorAll('.admin-tab-content').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        // Reset all buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Show selected content
+        const targetSection = document.getElementById(`section-${tabId}`);
+        if(targetSection) {
+            targetSection.style.display = (tabId === 'map' || tabId === 'analytics') ? 'flex' : 'block';
+        }
+        
+        // Highlight selected button
+        const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+        if(activeBtn) {
+            activeBtn.classList.add('active');
+        }
+    }
+
+    async function simulateGate(mode) {
+        const vehicle = document.getElementById('sim-vehicle').value;
+        if (!vehicle) return alert('Enter vehicle number first');
+
+        const url = mode === 'entry' ? '/api/entry' : '/api/exit';
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vehicle_number: vehicle })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(`Success: ${data.message || 'Gate Operated'}\n\nPage will refresh.`);
+                window.location.reload();
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    let currentChart = null;
+    const chartDataRaw = {{ chart_data | tojson | safe }};
+
+    function filterTransactionTable() {
+        const query = document.getElementById('transactionSearch').value.toLowerCase();
+        const method = document.getElementById('transactionMethodFilter').value.toLowerCase();
+        const rows = document.querySelectorAll('#transactionTable tbody tr');
+        
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            const methodInRow = row.cells[2].innerText.toLowerCase();
+            const matchesQuery = text.includes(query);
+            const matchesMethod = method === "" || methodInRow.includes(method);
+            row.style.display = (matchesQuery && matchesMethod) ? '' : 'none';
+        });
+    }
+
+    function filterParkingTable() {
+        const query = document.getElementById('parkingSearch').value.toLowerCase();
+        const status = document.getElementById('parkingStatusFilter').value.toLowerCase();
+        const rows = document.querySelectorAll('#parkingTable tbody tr');
+        
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            const statusInRow = row.cells[4].innerText.toLowerCase();
+            const matchesQuery = text.includes(query);
+            const matchesStatus = status === "" || statusInRow.includes(status);
+            row.style.display = (matchesQuery && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    function updateChartType() {
+        const type = document.getElementById('chartType').value;
+        renderChart(type);
+    }
+
+    function renderChart(type) {
+        const chartEl = document.getElementById('revenueChart');
+        if (!chartEl || !chartDataRaw) return;
+        
+        if (currentChart) currentChart.destroy();
+        
+        const ctx = chartEl.getContext('2d');
+        const isPie = type === 'pie';
+        
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+        Chart.defaults.color = 'rgba(255,255,255,0.5)';
+        
+        let data, options;
+        
+        if (isPie) {
+            data = {
+                labels: chartDataRaw.payment_methods,
+                datasets: [{
+                    data: chartDataRaw.method_counts,
+                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                    hoverOffset: 20,
+                    borderRadius: 10,
+                    spacing: 5,
+                    borderWidth: 0
+                }]
+            };
+            options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: { 
+                    legend: { 
+                        display: true, 
+                        position: 'right',
+                        labels: { 
+                            padding: 20,
+                            usePointStyle: true,
+                            font: { size: 13, weight: '600' },
+                            color: '#fff' 
+                        }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(15, 15, 15, 0.9)',
+                        titleFont: { size: 14, weight: 'bold' },
+                        padding: 12,
+                        cornerRadius: 12,
+                        displayColors: false,
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1
+                    }
+                }
+            };
+        } else {
+            const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+            
+            data = {
+                labels: chartDataRaw.dates,
+                datasets: [{
+                    label: 'Revenue (₹)',
+                    data: chartDataRaw.revenues,
+                    borderColor: '#6366f1',
+                    backgroundColor: type === 'line' ? gradient : '#6366f199',
+                    borderWidth: 3,
+                    fill: type === 'line',
+                    tension: 0.45,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#6366f1',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    pointHoverBackgroundColor: '#10b981',
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 3
+                }]
+            };
+            options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 15, 15, 0.9)',
+                        padding: 12,
+                        cornerRadius: 12,
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 14, weight: 'bold' },
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, 
+                        ticks: { padding: 10 } 
+                    },
+                    x: { 
+                        grid: { display: false }, 
+                        ticks: { padding: 10 } 
+                    }
+                }
+            };
+        }
+        
+        currentChart = new Chart(ctx, { 
+            type: isPie ? 'doughnut' : type, 
+            data, 
+            options,
+            plugins: [{
+                id: 'glow',
+                beforeDraw: (chart) => {
+                    if (type === 'line') {
+                        const ctx = chart.ctx;
+                        const _stroke = ctx.stroke;
+                        ctx.stroke = function() {
+                            ctx.save();
+                            ctx.shadowBlur = 15;
+                            ctx.shadowColor = '#6366f1aa';
+                            ctx.shadowOffsetY = 5;
+                            _stroke.apply(this, arguments);
+                            ctx.restore();
+                        }
+                    }
+                }
+            }]
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const forceSlotSelect = document.getElementById('force-slot-select');
+            const forceForm = document.getElementById('force-free-form');
+            if (forceSlotSelect && forceForm) {
+                forceSlotSelect.addEventListener('change', (e) => {
+                    forceForm.action = `/api/admin/force_free/${e.target.value}`;
+                });
+            }
+        } catch (e) { console.error("Force Free Setup Error:", e); }
+        
+        if (chartDataRaw && chartDataRaw.dates && chartDataRaw.dates.length > 0) {
+            renderChart('line');
+        }
+    });
+</script>
+{% endblock %}

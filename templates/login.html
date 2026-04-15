@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div
+    style="display: flex; min-height: 80vh; align-items: center; max-width: 1200px; margin: 0 auto; gap: 4rem; flex-wrap: wrap;">
+
+    <!-- Left Side: Project Details -->
+    <div style="flex: 1; min-width: 300px; padding: 2rem; animation: fadeInLeft 0.8s ease-out;">
+        <div
+            style="display: inline-block; padding: 0.4rem 1rem; background: rgba(16, 185, 129, 0.15); color: var(--success); border-radius: 20px; font-weight: 600; font-size: 0.9rem; margin-bottom: 1.5rem; border: 1px solid rgba(16, 185, 129, 0.3);">
+            v2.0 System Online</div>
+        <h1 style="font-size: 4rem; margin-bottom: 1.5rem; line-height: 1.1; font-weight: 800;">Next-Gen <br><span
+                style="color: var(--primary); text-shadow: 0 0 20px rgba(from var(--primary) r g b / 0.4);">Smart
+                Parking</span></h1>
+        <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 3rem; line-height: 1.6;">Experience the
+            future of parking management. Seamlessly book slots, automate gate entries, and manage your vehicle workflow
+            with our cutting-edge digital infrastructure.</p>
+
+        <ul style="list-style: none; padding: 0; color: var(--text-main); font-size: 1.1rem; line-height: 2;">
+            <li style="margin-bottom: 1.5rem; display: flex; align-items: center;"><i class="fa-solid fa-bolt"
+                    style="color: var(--primary); width: 30px; font-size: 1.5rem;"></i> <span>Real-time Interactive Slot
+                    Grids</span></li>
+            <li style="margin-bottom: 1.5rem; display: flex; align-items: center;"><i class="fa-solid fa-qrcode"
+                    style="color: var(--primary); width: 30px; font-size: 1.5rem;"></i> <span>Frictionless QR Code
+                    Checkout</span></li>
+            <li style="margin-bottom: 1.5rem; display: flex; align-items: center;"><i class="fa-solid fa-crown"
+                    style="color: #fbbf24; width: 30px; font-size: 1.5rem;"></i> <span>VIP Monthly Auto-Gate
+                    Subscriptions</span></li>
+            <li style="margin-bottom: 1.5rem; display: flex; align-items: center;"><i class="fa-solid fa-wallet"
+                    style="color: var(--success); width: 30px; font-size: 1.5rem;"></i> <span>Dynamic Digital Wallet
+                    Billing</span></li>
+        </ul>
+    </div>
+
+    <!-- Right Side: Auth Form -->
+    <div class="form-container"
+        style="flex: 1; max-width: 480px; min-width: 350px; padding: 3.5rem; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); animation: fadeIn 1s ease-out;">
+
+        <!-- Dynamic Error/Success messages -->
+        <div id="msg-box"
+            style="display: none; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center; border: 1px solid transparent; font-weight: 600;">
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-section">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h3 style="font-size: 1.8rem; color: white;">Welcome Back</h3>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">Log in to your account</p>
+            </div>
+
+            <form action="/api/auth/login" method="POST">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" required placeholder="user@example.com"
+                        style="background: rgba(0,0,0,0.3);">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" required placeholder="••••••••"
+                        style="background: rgba(0,0,0,0.3);">
+                </div>
+                <button type="submit" class="btn primary"
+                    style="width: 100%; margin-top: 1.5rem; padding: 1.2rem; font-size: 1.1rem; border-radius: 12px; box-shadow: var(--shadow-glow);"><i
+                        class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+            </form>
+            <p style="text-align: center; margin-top: 2rem; font-size: 0.95rem; color: var(--text-muted);">
+                Don't have an account? <a href="javascript:void(0)" onclick="toggleAuth()"
+                    style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary); padding-bottom: 2px;">Register
+                    Now</a>
+            </p>
+        </div>
+
+        <!-- Registration Form -->
+        <div id="register-section" style="display: none;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h3 style="font-size: 1.8rem; color: white;">Create Account</h3>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">Join the smart parking network</p>
+            </div>
+
+            <form action="/api/auth/register" method="POST">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="name" required placeholder="John Doe" style="background: rgba(0,0,0,0.3);">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" required placeholder="user@example.com"
+                        style="background: rgba(0,0,0,0.3);">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" required placeholder="••••••••"
+                        style="background: rgba(0,0,0,0.3);">
+                </div>
+                <button type="submit" class="btn primary"
+                    style="width: 100%; margin-top: 1.5rem; padding: 1.2rem; font-size: 1.1rem; border-radius: 12px; box-shadow: var(--shadow-glow);"><i
+                        class="fa-solid fa-user-plus"></i> Register Free</button>
+            </form>
+            <p style="text-align: center; margin-top: 2rem; font-size: 0.95rem; color: var(--text-muted);">
+                Already have an account? <a href="javascript:void(0)" onclick="toggleAuth()"
+                    style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary); padding-bottom: 2px;">Back
+                    to Login</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleAuth() {
+        const login = document.getElementById('login-section');
+        const register = document.getElementById('register-section');
+        if (login.style.display === 'none') {
+            login.style.display = 'block';
+            register.style.display = 'none';
+        } else {
+            login.style.display = 'none';
+            register.style.display = 'block';
+        }
+    }
+
+    // Checking for URL params to show alerts
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const msgBox = document.getElementById('msg-box');
+
+        if (urlParams.has('error')) {
+            msgBox.style.display = 'block';
+            msgBox.style.background = 'rgba(239, 68, 68, 0.2)';
+            msgBox.style.color = '#fca5a5';
+            msgBox.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+            msgBox.innerText = urlParams.get('error');
+        } else if (urlParams.has('msg')) {
+            msgBox.style.display = 'block';
+            msgBox.style.background = 'rgba(16, 185, 129, 0.2)';
+            msgBox.style.color = '#86efac';
+            msgBox.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+            msgBox.innerText = urlParams.get('msg');
+        }
+    });
+</script>
+{% endblock %}

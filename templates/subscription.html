@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container"
+    style="max-width: 900px; margin: 4rem auto; padding: 3rem; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 16px;">
+
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <i class="fa-solid fa-crown"
+            style="font-size: 4rem; color: #fbbf24; margin-bottom: 1rem; filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.4));"></i>
+        <h2 style="font-size: 2.5rem;">Smart <span style="color: #fbbf24;">Subscriptions</span></h2>
+        <p style="color: var(--text-muted); font-size: 1.1rem; margin-top: 0.5rem;">Enjoy seamless automated entry and
+            priority mapping.</p>
+    </div>
+
+    {% if subscription %}
+    <!-- Active Subscription Details -->
+    <div
+        style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(0,0,0,0.6)); padding: 3rem; border-radius: 16px; border: 1px solid rgba(251, 191, 36, 0.4); text-align: center; box-shadow: inset 0 0 50px rgba(251, 191, 36, 0.05);">
+        <div
+            style="display: inline-block; padding: 0.4rem 1.5rem; background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); border-radius: 30px; font-size: 0.9rem; font-weight: bold; margin-bottom: 1.5rem; letter-spacing: 1px;">
+            ACTIVE PLAN</div>
+        <h3 style="font-size: 3rem; color: white; margin-bottom: 1rem; text-transform: capitalize;">{{
+            subscription.plan_name }} Pass</h3>
+
+        <div style="display: flex; justify-content: center; gap: 3rem; margin: 2rem 0; color: var(--text-main);">
+            <div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase;">Valid From</p>
+                <p style="font-size: 1.2rem; font-weight: 600;">{{ subscription.start_date.split(' ')[0] }}</p>
+            </div>
+            <div style="border-left: 1px solid rgba(255,255,255,0.1);"></div>
+            <div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase;">Valid Until</p>
+                <p style="font-size: 1.2rem; font-weight: 600; color: var(--primary);">{{ subscription.end_date.split('
+                    ')[0] }}</p>
+            </div>
+        </div>
+
+        <p style="color: var(--text-muted); font-size: 1rem;"><i class="fa-solid fa-circle-check"
+                style="color: var(--success);"></i> Automatic 100% discount on all checkout payments.</p>
+    </div>
+    {% else %}
+
+    <!-- Pricing Plans -->
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+
+        <!-- Standard -->
+        <div
+            style="flex: 1; min-width: 280px; max-width: 350px; background: rgba(0,0,0,0.3); padding: 2.5rem 2rem; border-radius: 16px; border: 1px solid var(--glass-border); transition: 0.3s; position: relative;">
+            <h3 style="font-size: 1.8rem; margin-bottom: 0.5rem; text-align: center;">Standard</h3>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <span style="font-size: 2.5rem; font-weight: 800; color: white;">₹999</span><span
+                    style="color: var(--text-muted);">/mo</span>
+            </div>
+
+            <ul style="list-style: none; padding: 0; margin-bottom: 2.5rem; color: var(--text-main); line-height: 2;">
+                <li><i class="fa-solid fa-check" style="color: var(--success); margin-right: 0.5rem;"></i> Unlimited
+                    general parking</li>
+                <li><i class="fa-solid fa-check" style="color: var(--success); margin-right: 0.5rem;"></i> Standard QR
+                    checkout</li>
+                <li><i class="fa-solid fa-xmark" style="color: var(--danger); margin-right: 0.5rem; opacity: 0.5;"></i>
+                    No VIP Zone access</li>
+            </ul>
+
+            <form action="/api/buy_subscription" method="POST">
+                <input type="hidden" name="plan" value="standard">
+                <button type="submit" class="btn primary" style="width: 100%; border-radius: 8px;">Buy Standard</button>
+            </form>
+        </div>
+
+        <!-- Premium -->
+        <div
+            style="flex: 1; min-width: 280px; max-width: 350px; background: linear-gradient(180deg, rgba(251, 191, 36, 0.1) 0%, rgba(0,0,0,0.5) 100%); padding: 2.5rem 2rem; border-radius: 16px; border: 2px solid rgba(251, 191, 36, 0.6); transform: scale(1.05); box-shadow: 0 10px 30px rgba(251, 191, 36, 0.15); position: relative;">
+            <div
+                style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #fbbf24; color: black; font-weight: bold; font-size: 0.8rem; padding: 0.3rem 1rem; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;">
+                Recommended</div>
+
+            <h3 style="font-size: 1.8rem; margin-bottom: 0.5rem; text-align: center; color: #fbbf24;">Premium VIP</h3>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <span style="font-size: 2.5rem; font-weight: 800; color: white;">₹1500</span><span
+                    style="color: var(--text-muted);">/mo</span>
+            </div>
+
+            <ul style="list-style: none; padding: 0; margin-bottom: 2.5rem; color: var(--text-main); line-height: 2;">
+                <li><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 0.5rem;"></i> Unlimited VIP
+                    parking</li>
+                <li><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 0.5rem;"></i> Automated gate
+                    clearance</li>
+                <li><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 0.5rem;"></i> Priority 24/7
+                    Support</li>
+            </ul>
+
+            <form action="/api/buy_subscription" method="POST">
+                <input type="hidden" name="plan" value="premium">
+                <button type="submit" class="btn"
+                    style="width: 100%; border-radius: 8px; background: #fbbf24; color: black; font-weight: bold; border: none; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);">Join
+                    Premium</button>
+            </form>
+        </div>
+
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
