@@ -14,7 +14,7 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.secret_key = 'smart_parking_super_secret_key'
 DATABASE = 'parking.db'
 
-ADMIN_EMAILS = ['guptaayush122006@gmail.com', 'jagratisinghal9@gmail.com']
+ADMIN_EMAILS = ['admin@smartparking.com', 'system@smartparking.com']
 
 def get_db() -> sqlite3.Connection:
     db = getattr(g, '_database', None)
@@ -814,7 +814,7 @@ def payment_page(session_id):
         return "Session not found", 404
         
     # Generate UPI QR code explicitly for the requested ID
-    upi_str = f"upi://pay?pa=guptaayush122006@axl&pn=SmartParking&am={session_rec['cost']}&cu=INR"
+    upi_str = f"upi://pay?pa=pay@smartparking.com&pn=SmartParking&am={session_rec['cost']}&cu=INR"
     qr = qrcode.make(upi_str)
     buffered = BytesIO()
     qr.save(buffered, format="PNG")
@@ -866,7 +866,7 @@ def process_payment():
 @login_required
 def generate_qr():
     amount = request.args.get('amount', '0')
-    upi_str = f"upi://pay?pa=guptaayush122006@axl&pn=SmartParking&am={amount}&cu=INR"
+    upi_str = f"upi://pay?pa=pay@smartparking.com&pn=SmartParking&am={amount}&cu=INR"
     qr = qrcode.make(upi_str)
     buffered = BytesIO()
     qr.save(buffered, format="PNG")

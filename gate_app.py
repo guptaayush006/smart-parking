@@ -5,7 +5,7 @@ app = Flask(__name__, template_folder='gate_templates')
 
 # Configuration to connect to main server
 MAIN_SERVER = "http://127.0.0.1:5000"
-ADMIN_EMAIL = "guptaayush122006@gmail.com"  
+ADMIN_EMAIL = "admin@smartparking.com"  
 ADMIN_PASSWORD = "admin"
 
 # Global session to maintain admin login to main app

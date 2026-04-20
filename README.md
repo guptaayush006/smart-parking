@@ -50,8 +50,8 @@ python app.py
 
 ### 3. Setup Administrator Accounts
 Registration defaults to normal users unless the email matches predefined Admin credentials. To access the admin panel, register with one of the following emails:
-- `guptaayush122006@gmail.com`
-- `jagratisinghal9@gmail.com`
+- `admin@smartparking.com`
+- `system@smartparking.com`
 
 ---
 *Developed with a focus on modern UI aesthetics and frictionless user experiences.*
