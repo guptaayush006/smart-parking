@@ -1,9 +1,0 @@
-{
-    "python.analysis.typeCheckingMode": "off",
-    "python.analysis.diagnosticSeverityOverrides": {
-        "reportArgumentType": "none",
-        "reportGeneralTypeIssues": "none",
-        "reportCallIssue": "none"
-    },
-    "python.defaultInterpreterPath": "c:/Users/KRISHNA INFOTECH/.antigravity/smart/venv/Scripts/python.exe"
-}

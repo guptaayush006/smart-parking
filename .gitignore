@@ -3,3 +3,8 @@ __pycache__/
 *.db
 tempCodeRunnerFile.py
 venv/
+.vscode/
+*.png
+*.docx
+clear_db_temp.py
+test_app.py
