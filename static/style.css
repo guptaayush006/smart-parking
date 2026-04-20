@@ -76,6 +76,7 @@ h5 {
     color: var(--primary);
     background: linear-gradient(135deg, #818cf8, var(--primary));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 

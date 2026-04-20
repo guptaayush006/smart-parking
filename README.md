@@ -1,33 +1,57 @@
-# Smart Parking System
+# 🚀 Smart Parking System – Next-Gen Access Control
 
-A comprehensive Smart Parking System implemented with Python and Flask. This project allows users to seamlessly book parking slots, manage their profiles and wallets, buy subscriptions, and check out securely. It also provides an admin dashboard to visualize analytics, manage users, and operate the parking gate terminal.
+![Smart Parking System](https://img.shields.io/badge/Status-Active-success)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![Flask](https://img.shields.io/badge/Framework-Flask-red)
 
-## Features
+A state-of-the-art **Smart Parking System** built with Python and Flask, featuring a fully automated gate terminal with Artificial Intelligence (ANPR), premium glassmorphism aesthetics, dynamic chart analytics, and seamless digital wallet integrations. 
 
-- **User Dashboard:** Book slots (hourly or monthly), manage profiles, and review booking history.
-- **Wallet System:** Add funds to your digital wallet and use them for seamless checkout.
-- **Subscriptions:** Purchase premium or standard monthly plans for uninterrupted parking access.
-- **Admin Dashboard:** Access analytics such as total revenue, daily revenue trends, currently active sessions, and global history.
-- **Gate Terminal Module:** API for verifying vehicle authorization upon entry/exit based on live bookings and subscriptions.
-- **Payment & Receipts:** Interactive QR code generation for payments and detailed digital receipts.
+## ✨ Key Features
 
-## Technologies Used
-- **Backend**: Python, Flask
-- **Database**: SQLite
-- **Frontend**: HTML/CSS, Jinja2 Templates, JavaScript
-- **Libraries**: `qrcode`, `werkzeug`
+### 📸 AI-Powered Gate Terminal (ANPR)
+- **Automatic Number Plate Recognition:** Integrates `Tesseract.js` directly into the web browser for lightning-fast, client-side vehicle plate extraction.
+- **Auto-Gate Control:** Instantly cross-checks plates with active database bookings to open the gate barrier, log entries, and flag unauthorized vehicles.
+- **Dynamic Overlays:** Real-time feedback with green "Access Granted" and red "Access Denied" overlays right on the camera feed.
 
-## Getting Started
+### 💎 Premium User Dashboard
+- **Live Interactive Parking Map:** Visually select from 50 parking slots, dynamically color-coded (available, booked, physically inside, etc.).
+- **Digital Wallet & Payments:** Load funds via dynamically generated UPI QR codes and use your balance for smooth 1-click checkouts.
+- **VIP Subscriptions:** Upgrade to 'Standard' or 'Premium' memberships to enjoy automatic gate clearances, VIP zones, and heavily discounted long-term stays.
 
-1. Clone this repository.
-2. Setup a virtual environment: `python -m venv .venv` and activate it.
-3. Install dependencies: `pip install -r requirements.txt`.
-4. Run the application: `python app.py`.
-5. Access the application at `http://127.0.0.1:5000`.
+### 📊 Advanced Admin Analytics
+- **Live Metrics & Graphs:** View daily revenue trends, wallet recharges, and booking distributions via interactive `Chart.js` visualizers.
+- **User & Identity Management:** One-click options to block/unblock users or manually top-up their wallets.
+- **Emergency Gate Control:** Force-free occupied slots or manually simulate gate API entries directly from the dashboard.
 
-## Credentials
-Admins are based on email. To login as admin, register with predefined admin emails:
+## 🛠️ Technology Stack
+- **Backend Infrastructure:** Python, Flask, SQL (SQLite3)
+- **Frontend Layer:** HTML5, modern CSS3 (Glassmorphism, custom CSS Variables), Vanilla JavaScript
+- **AI & Data Vis:** Tesseract.js (Optical Character Recognition), Chart.js (Data Analytics)
+- **Utilities:** `qrcode` (Secure Wallet API), Jinja2 Templating
+
+## 🚀 Getting Started
+
+### 1. Installation
+Clone the repository and install the required dependencies:
+```bash
+git clone https://github.com/guptaayush006/smart-parking.git
+cd smart-parking
+python -m venv .venv
+# Activate virtual environment (.venv\Scripts\activate on Windows)
+pip install -r requirements.txt
+```
+
+### 2. Run the Server
+Launch the primary backend application.
+```bash
+python app.py
+```
+*The main application runs on `http://127.0.0.1:5000`.*
+
+### 3. Setup Administrator Accounts
+Registration defaults to normal users unless the email matches predefined Admin credentials. To access the admin panel, register with one of the following emails:
 - `guptaayush122006@gmail.com`
 - `jagratisinghal9@gmail.com`
 
-Any other email will be registered as a regular user.
+---
+*Developed with a focus on modern UI aesthetics and frictionless user experiences.*

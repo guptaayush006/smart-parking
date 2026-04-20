@@ -73,22 +73,42 @@
         border-color: var(--success);
     }
 
-    .slot-box.occupied {
+    .slot-box.occupied { /* Someone else's or inside */
         border-color: rgba(239, 68, 68, 0.3);
         opacity: 0.6;
         cursor: not-allowed;
     }
 
-    .slot-box.user-active {
-        border-color: rgba(245, 158, 11, 0.6);
+    .slot-box.booked { /* Someone else's booking */
+        border-color: rgba(59, 130, 246, 0.3);
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .slot-box.user-booked { /* User booked, waiting for entry */
+        border-color: rgba(59, 130, 246, 0.8);
+        background: rgba(59, 130, 246, 0.15);
+        opacity: 1;
+        cursor: pointer;
+    }
+
+    .slot-box.user-booked:hover {
+        background: rgba(59, 130, 246, 0.2);
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .slot-box.user-active { /* User physically inside */
+        border-color: rgba(245, 158, 11, 0.8);
+        background: rgba(245, 158, 11, 0.15);
         opacity: 1;
         cursor: pointer;
     }
 
     .slot-box.user-active:hover {
-        background: rgba(245, 158, 11, 0.1);
+        background: rgba(245, 158, 11, 0.2);
         transform: translateY(-5px);
-        box-shadow: 0 5px 20px rgba(245, 158, 11, 0.2);
+        box-shadow: 0 5px 20px rgba(245, 158, 11, 0.3);
     }
 
     .slot-id {
@@ -227,17 +247,33 @@
         
         {% if slot.is_occupied %}
             {% if active_b.id %}
-            <form id="checkout-form-{{ active_b.id }}" action="/api/user_checkout/{{ active_b.id }}" method="POST" style="display: none;"></form>
-            <div class="slot-box user-active" title="Your Booking - Click to Checkout" data-slot-id="{{ slot.id }}" onclick="if(confirm('Proceed to checkout and free Slot {{ slot.name }}?')) document.getElementById('checkout-form-{{ active_b.id }}').submit();">
-                <i class="fa-solid fa-car-side" style="color: #f59e0b; font-size: 1.8rem;"></i>
-                <div class="slot-id" style="color: #f59e0b;">{{ slot.name }}</div>
-                <div style="font-size: 0.7rem; color: #f59e0b; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px;">CHECKOUT</div>
-            </div>
+                {% if slot.status == 'occupied' %}
+                <form id="checkout-form-{{ active_b.id }}" action="/api/user_checkout/{{ active_b.id }}" method="POST" style="display: none;"></form>
+                <div class="slot-box user-active" title="Vehicle Inside - Click to Checkout" data-slot-id="{{ slot.id }}" onclick="if(confirm('Pay and Checkout Slot {{ slot.name }} now?')) document.getElementById('checkout-form-{{ active_b.id }}').submit();">
+                    <i class="fa-solid fa-car-side" style="color: #f59e0b; font-size: 1.8rem;"></i>
+                    <div class="slot-id" style="color: #f59e0b;">{{ slot.name }}</div>
+                    <div style="font-size: 0.65rem; color: #f59e0b; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px;">INSIDE - CHECKOUT</div>
+                </div>
+                {% else %}
+                <form id="checkout-form-{{ active_b.id }}" action="/api/user_checkout/{{ active_b.id }}" method="POST" style="display: none;"></form>
+                <div class="slot-box user-booked" title="Reserved - Awaiting Gate Entry" data-slot-id="{{ slot.id }}" onclick="if(confirm('Cancel booking for Slot {{ slot.name }}?')) document.getElementById('checkout-form-{{ active_b.id }}').submit();">
+                    <i class="fa-solid fa-ticket" style="color: #3b82f6; font-size: 1.8rem;"></i>
+                    <div class="slot-id" style="color: #3b82f6;">{{ slot.name }}</div>
+                    <div style="font-size: 0.65rem; color: #3b82f6; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px;">BOOKED - CANCEL</div>
+                </div>
+                {% endif %}
             {% else %}
-            <div class="slot-box occupied" title="Slot Occupied" data-slot-id="{{ slot.id }}">
-                <i class="fa-solid fa-car-side" style="color: var(--danger); font-size: 1.8rem;"></i>
-                <div class="slot-id" style="color: var(--danger);">{{ slot.name }}</div>
-            </div>
+                {% if slot.status == 'occupied' %}
+                <div class="slot-box occupied" title="Slot Occupied" data-slot-id="{{ slot.id }}">
+                    <i class="fa-solid fa-car-side" style="color: var(--danger); font-size: 1.8rem;"></i>
+                    <div class="slot-id" style="color: var(--danger);">{{ slot.name }}</div>
+                </div>
+                {% else %}
+                <div class="slot-box booked" title="Slot Booked" data-slot-id="{{ slot.id }}">
+                    <i class="fa-solid fa-lock" style="color: #3b82f6; font-size: 1.8rem;"></i>
+                    <div class="slot-id" style="color: #3b82f6;">{{ slot.name }}</div>
+                </div>
+                {% endif %}
             {% endif %}
         {% else %}
         <div class="slot-box available" onclick="openBookingModal('{{ slot.id }}', '{{ slot.name }}')"
@@ -308,7 +344,7 @@
             </div>
             {% endif %}
 
-            <div id="new-vehicle-input-group" class="form-group" style="{% if user.vehicle_number %}display: none;{% endif %} margin-top: 0.5rem;">
+            <div id="new-vehicle-input-group" class="form-group" {% if user.vehicle_number %}style="display: none; margin-top: 0.5rem;"{% else %}style="margin-top: 0.5rem;"{% endif %}>
                 <input type="text" id="modal-vehicle-number" name="vehicle_number"
                     value="{{ user.vehicle_number if user.vehicle_number else '' }}" required
                     placeholder="ENTER VEHICLE NO. (e.g. MH01 AB 1234)"
@@ -336,7 +372,7 @@
             style="display: flex; flex-direction: column; gap: 1.2rem; max-height: 400px; overflow-y: auto; padding-right: 10px;">
             {% for b in bookings %}
             <div
-                style="background: rgba(0,0,0,0.3); padding: 1.2rem 1.5rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid {% if b.status == 'active' %}var(--success){% else %}var(--text-muted){% endif %}; transition: transform 0.2s;">
+                {% if b.status == 'active' %}style="background: rgba(0,0,0,0.3); padding: 1.2rem 1.5rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--success); transition: transform 0.2s;"{% else %}style="background: rgba(0,0,0,0.3); padding: 1.2rem 1.5rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--text-muted); transition: transform 0.2s;"{% endif %}>
                 <div>
                     <strong
                         style="font-size: 1.3rem; color: var(--text-main); display: block; margin-bottom: 0.3rem;">Slot

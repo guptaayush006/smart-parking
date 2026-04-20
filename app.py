@@ -16,7 +16,7 @@ DATABASE = 'parking.db'
 
 ADMIN_EMAILS = ['guptaayush122006@gmail.com', 'jagratisinghal9@gmail.com']
 
-def get_db():
+def get_db() -> sqlite3.Connection:
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
@@ -382,7 +382,7 @@ def login():
 def admin_force_free(slot_id):
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("UPDATE parking_slots SET is_occupied = 0 WHERE id = ?", (slot_id,))
+    cursor.execute("UPDATE parking_slots SET is_occupied = 0, status = 'available' WHERE id = ?", (slot_id,))
     # Mark associated active bookings as completed forcefully
     cursor.execute("UPDATE bookings SET status = 'completed' WHERE slot_id = ? AND status = 'active'", (slot_id,))
     db.commit()
@@ -424,9 +424,31 @@ def update_profile():
         db.execute('UPDATE users SET name = ?, phone = ?, vehicle_number = ? WHERE id = ?', (name, phone, vehicle, session['user_id']))
         db.commit()
         session['user_name'] = name  # Update session name
+        return redirect(url_for('profile_dashboard') + "?msg=Profile+Updated")
     except sqlite3.IntegrityError:
-        pass # Handle vehicle num already exists quietly for now
-    return redirect(url_for('user_dashboard', msg="Profile Updated"))
+        return redirect(url_for('profile_dashboard') + "?error=Vehicle+Number+Already+Exists!")
+
+@app.route('/api/update_password', methods=['POST'])
+@login_required
+def update_password():
+    current_pass = request.form.get('current_password')
+    new_pass = request.form.get('new_password')
+    confirm_pass = request.form.get('confirm_password')
+
+    if new_pass != confirm_pass:
+        return redirect(url_for('profile_dashboard') + "?error=New+passwords+do+not+match!")
+        
+    db = get_db()
+    user = db.execute('SELECT password FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    
+    if not check_password_hash(user['password'], current_pass):
+        return redirect(url_for('profile_dashboard') + "?error=Current+password+is+incorrect!")
+        
+    hashed_password = generate_password_hash(new_pass)
+    db.execute('UPDATE users SET password = ? WHERE id = ?', (hashed_password, session['user_id']))
+    db.commit()
+    
+    return redirect(url_for('profile_dashboard', msg="Password updated successfully!"))
 
 @app.route('/api/slots', methods=['GET'])
 def get_slots():
@@ -468,7 +490,7 @@ def create_booking():
     if not slot or slot['is_occupied']:
         return "The selected slot is no longer available.", 400
         
-    cursor.execute('UPDATE parking_slots SET is_occupied = 1 WHERE id = ?', (slot['id'],))
+    cursor.execute('UPDATE parking_slots SET is_occupied = 1, status = \'booked\' WHERE id = ?', (slot['id'],))
     
     cursor.execute('INSERT INTO bookings (user_id, slot_id, vehicle_type, book_type, status, start_time) VALUES (?, ?, ?, ?, ?, ?)',
                    (user_id, slot['id'], vehicle_type, book_type, 'active', datetime.now()))
@@ -521,27 +543,32 @@ def buy_subscription():
 @admin_required
 def process_entry():
     data = request.json
-    vehicle = data.get('vehicle_number')
+    vehicle = data.get('vehicle_number', '').strip().upper()
+    if not vehicle:
+        return jsonify({'error': 'No vehicle number provided'}), 400
+
+    vehicle_clean = vehicle.replace(' ', '').replace('-', '')
+
     db = get_db()
     cursor = db.cursor()
     
-    user = cursor.execute('SELECT id FROM users WHERE vehicle_number = ?', (vehicle,)).fetchone()
+    user = cursor.execute("SELECT id, vehicle_number FROM users WHERE REPLACE(REPLACE(UPPER(vehicle_number), ' ', ''), '-', '') = ?", (vehicle_clean,)).fetchone()
     if not user:
         return jsonify({'error': 'Vehicle not registered or booking required'}), 400
         
     booking = cursor.execute("SELECT id, vehicle_type FROM bookings WHERE user_id = ? AND status = 'active'", (user['id'],)).fetchone()
-    subscription = cursor.execute('SELECT id FROM subscriptions WHERE user_id = ?', (user['id'],)).fetchone()
+    subscription = cursor.execute("SELECT id FROM subscriptions WHERE user_id = ? AND status = 'active'", (user['id'],)).fetchone()
     
     if not booking and not subscription:
         return jsonify({'error': 'No active booking or subscription found'}), 400
         
     v_type = booking['vehicle_type'] if booking else 'car'
         
-    session_rec = cursor.execute("SELECT id FROM parking_sessions WHERE vehicle_number = ? AND status = 'active'", (vehicle,)).fetchone()
+    session_rec = cursor.execute("SELECT id FROM parking_sessions WHERE REPLACE(REPLACE(UPPER(vehicle_number), ' ', ''), '-', '') = ? AND status = 'active'", (vehicle_clean,)).fetchone()
     if session_rec:
         return jsonify({'error': 'Vehicle is already inside.'}), 400
         
-    cursor.execute('INSERT INTO parking_sessions (vehicle_number, vehicle_type, entry_time) VALUES (?, ?, ?)', (vehicle, v_type, datetime.now()))
+    cursor.execute('INSERT INTO parking_sessions (vehicle_number, vehicle_type, entry_time) VALUES (?, ?, ?)', (user['vehicle_number'], v_type, datetime.now()))
     db.commit()
     
     return jsonify({'message': 'Gate Opened. Welcome!'})
@@ -554,18 +581,24 @@ def gate_verify():
     if not vehicle:
         return jsonify({'status': 'denied', 'message': 'No vehicle number detected'})
 
+    # Remove spaces and hyphens for reliable DB comparison
+    vehicle_clean = vehicle.replace(' ', '').replace('-', '')
+
     db = get_db()
     cursor = db.cursor()
 
     # 1. Check if vehicle is already inside (Active Session)
-    active_session = cursor.execute("SELECT id, entry_time FROM parking_sessions WHERE vehicle_number = ? AND status = 'active'", (vehicle,)).fetchone()
+    active_session = cursor.execute("SELECT id, entry_time FROM parking_sessions WHERE REPLACE(REPLACE(UPPER(vehicle_number), ' ', ''), '-', '') = ? AND status = 'active'", (vehicle_clean,)).fetchone()
 
     if active_session:
         # --- EXIT LOGIC ---
-        user = cursor.execute("SELECT id, role FROM users WHERE vehicle_number = ?", (vehicle,)).fetchone()
+        user = cursor.execute("SELECT id, role, vehicle_number FROM users WHERE REPLACE(REPLACE(UPPER(vehicle_number), ' ', ''), '-', '') = ?", (vehicle_clean,)).fetchone()
         if not user:
             return jsonify({'status': 'denied', 'message': 'Unregistered vehicle exit detection'})
 
+        # Update vehicle to its correct format instead from DB
+        vehicle_db = user['vehicle_number']
+        
         # Check for Subscription or Payment
         subscription = cursor.execute("SELECT id FROM subscriptions WHERE user_id = ? AND status = 'active'", (user['id'],)).fetchone()
         
@@ -583,7 +616,7 @@ def gate_verify():
             # Or just deny exit if not paid. For "Automatic" we assume either Subscription or Paid/Wallet
             v_type = 'car' # Default
             rate = 50.0
-            cost = max(1, duration_mins / 60) * rate
+            cost = max(1.0, duration_mins / 60) * rate
             
             # Auto-deduct from wallet if possible, else deny
             user_data = cursor.execute("SELECT wallet_balance FROM users WHERE id = ?", (user['id'],)).fetchone()
@@ -600,20 +633,30 @@ def gate_verify():
         # Free slot
         booking = cursor.execute("SELECT slot_id FROM bookings WHERE user_id = ? AND status = 'active'", (user['id'],)).fetchone()
         if booking:
-            cursor.execute("UPDATE parking_slots SET is_occupied = 0 WHERE id = ?", (booking['slot_id'],))
+            cursor.execute("UPDATE parking_slots SET is_occupied = 0, status = 'available' WHERE id = ?", (booking['slot_id'],))
             cursor.execute("UPDATE bookings SET status = 'completed' WHERE user_id = ? AND status = 'active'", (user['id'],))
-            
+             
         db.commit()
         return jsonify({'status': 'allowed', 'mode': 'EXIT', 'message': f'Gate Opened. Goodbye {vehicle}!', 'cost': cost})
 
     else:
+        # Check if they recently checked out via App and payment is done, allowing physical gate exit.
+        recent_completed = cursor.execute("SELECT id, exit_time FROM parking_sessions WHERE REPLACE(REPLACE(UPPER(vehicle_number), ' ', ''), '-', '') = ? AND status = 'completed' ORDER BY exit_time DESC LIMIT 1", (vehicle_clean,)).fetchone()
+        if recent_completed and recent_completed['exit_time']:
+            try:
+                exit_dt = datetime.strptime(recent_completed['exit_time'], '%Y-%m-%d %H:%M:%S.%f')
+                if (datetime.now() - exit_dt).total_seconds() < 900:  # 15 minutes grace period
+                    return jsonify({'status': 'allowed', 'mode': 'EXIT', 'message': f'Payment Done. Gate Opened for Exit!'})
+            except Exception:
+                pass
+                
         # --- ENTRY LOGIC ---
-        user = cursor.execute("SELECT id, name FROM users WHERE vehicle_number = ?", (vehicle,)).fetchone()
+        user = cursor.execute("SELECT id, name, vehicle_number FROM users WHERE REPLACE(REPLACE(UPPER(vehicle_number), ' ', ''), '-', '') = ?", (vehicle_clean,)).fetchone()
         if not user:
             return jsonify({'status': 'denied', 'message': f'Vehicle {vehicle} is not registered.'})
 
         # Check for active booking or subscription
-        booking = cursor.execute("SELECT id, vehicle_type FROM bookings WHERE user_id = ? AND status = 'active'", (user['id'],)).fetchone()
+        booking = cursor.execute("SELECT id, slot_id, vehicle_type FROM bookings WHERE user_id = ? AND status = 'active'", (user['id'],)).fetchone()
         subscription = cursor.execute("SELECT id FROM subscriptions WHERE user_id = ? AND status = 'active'", (user['id'],)).fetchone()
 
         if not (booking or subscription):
@@ -622,7 +665,11 @@ def gate_verify():
         v_type = booking['vehicle_type'] if booking else 'car'
         
         cursor.execute('INSERT INTO parking_sessions (vehicle_number, vehicle_type, entry_time) VALUES (?, ?, ?)', 
-                       (vehicle, v_type, datetime.now()))
+                       (user['vehicle_number'], v_type, datetime.now()))
+                       
+        if booking and booking['slot_id']:
+            cursor.execute("UPDATE parking_slots SET status = 'occupied' WHERE id = ?", (booking['slot_id'],))
+            
         db.commit()
         return jsonify({'status': 'allowed', 'mode': 'ENTRY', 'message': f'Gate Opened. Welcome {user["name"]}!'})
 
@@ -630,11 +677,16 @@ def gate_verify():
 @admin_required
 def process_exit():
     data = request.json
-    vehicle = data.get('vehicle_number')
+    vehicle = data.get('vehicle_number', '').strip().upper()
+    if not vehicle:
+        return jsonify({'error': 'No vehicle number provided'}), 400
+
+    vehicle_clean = vehicle.replace(' ', '').replace('-', '')
+
     db = get_db()
     cursor = db.cursor()
     
-    session_rec = cursor.execute("SELECT id, entry_time FROM parking_sessions WHERE vehicle_number = ? AND status = 'active'", (vehicle,)).fetchone()
+    session_rec = cursor.execute("SELECT id, entry_time, vehicle_type FROM parking_sessions WHERE REPLACE(REPLACE(UPPER(vehicle_number), ' ', ''), '-', '') = ? AND status = 'active'", (vehicle_clean,)).fetchone()
     if not session_rec:
         return jsonify({'error': 'No active entry found for this vehicle.'}), 400
         
@@ -645,12 +697,12 @@ def process_exit():
     if duration_mins == 0:
         duration_mins = 60 # simulate 1 hour for quick testing
         
-    user = cursor.execute('SELECT id FROM users WHERE vehicle_number = ?', (vehicle,)).fetchone()
+    user = cursor.execute("SELECT id FROM users WHERE REPLACE(REPLACE(UPPER(vehicle_number), ' ', ''), '-', '') = ?", (vehicle_clean,)).fetchone()
     subscription = cursor.execute("SELECT id FROM subscriptions WHERE user_id = ? AND status = 'active'", (user['id'],)).fetchone()
     
     cost = 0.0
     if not subscription:
-        hours = max(1, duration_mins / 60)
+        hours = max(1.0, duration_mins / 60)
         v_type = session_rec['vehicle_type']
         rate = 50.0 # Default Car
         if v_type == 'motorcycle':
@@ -665,7 +717,7 @@ def process_exit():
                    
     b_slot = cursor.execute("SELECT slot_id FROM bookings WHERE user_id = ? AND status = 'active'", (user['id'],)).fetchone()
     if b_slot:
-        cursor.execute("UPDATE parking_slots SET is_occupied = 0 WHERE id = ?", (b_slot['slot_id'],))
+        cursor.execute("UPDATE parking_slots SET is_occupied = 0, status = 'available' WHERE id = ?", (b_slot['slot_id'],))
         cursor.execute("UPDATE bookings SET status = 'completed' WHERE user_id = ? AND status = 'active'", (user['id'],))
         
     db.commit()
@@ -686,44 +738,37 @@ def user_checkout(booking_id):
         return jsonify({'error': 'Active booking not found.'}), 404
         
     # Free the slot and close booking
-    cursor.execute("UPDATE parking_slots SET is_occupied = 0 WHERE id = ?", (booking['slot_id'],))
+    cursor.execute("UPDATE parking_slots SET is_occupied = 0, status = 'available' WHERE id = ?", (booking['slot_id'],))
     cursor.execute("UPDATE bookings SET status = 'completed', end_time = ? WHERE id = ?", (datetime.now(), booking_id))
     
     # Check if there's an active session built by admin gate
     user = cursor.execute("SELECT vehicle_number FROM users WHERE id = ?", (user_id,)).fetchone()
     session_rec = cursor.execute("SELECT id, entry_time, vehicle_type FROM parking_sessions WHERE vehicle_number = ? AND status = 'active'", (user['vehicle_number'],)).fetchone()
     
-    # Continuity fix: If they checked out but bypassed the Gate Entry button during testing, auto-construct a session.
+    # If they never entered the gate, just cancel nicely.
     if not session_rec:
-        cursor.execute("INSERT INTO parking_sessions (vehicle_number, vehicle_type, entry_time) VALUES (?, ?, ?)",
-                       (user['vehicle_number'], booking['vehicle_type'], booking['start_time']))
         db.commit()
-        session_rec = cursor.execute("SELECT id, entry_time, vehicle_type FROM parking_sessions WHERE vehicle_number = ? AND status = 'active' ORDER BY id DESC LIMIT 1", (user['vehicle_number'],)).fetchone()
+        return redirect(url_for('user_dashboard', msg="Booking Cancelled. Billing starts only AFTER gate entry!"))
 
+    # Simulate exit cost logic securely
+    entry_time = datetime.strptime(session_rec['entry_time'], '%Y-%m-%d %H:%M:%S.%f')
+    exit_time = datetime.now()
+    duration_mins = int((exit_time - entry_time).total_seconds() / 60)
+    if duration_mins == 0: duration_mins = 60
+    
+    subscription = cursor.execute("SELECT id FROM subscriptions WHERE user_id = ? AND status = 'active'", (user_id,)).fetchone()
+    cost = 0.0
+    if not subscription:
+        hours = max(1.0, duration_mins / 60)
+        v_type = session_rec['vehicle_type']
+        rate = {"motorcycle": 20.0, "car": 50.0, "truck": 100.0}.get(v_type, 50.0)
+        cost = hours * rate
+        
+    cursor.execute("UPDATE parking_sessions SET exit_time = ?, total_duration_minutes = ?, cost = ?, status = 'completed' WHERE id = ?",
+                   (exit_time, duration_mins, cost, session_rec['id']))
     db.commit()
-
-    if session_rec:
-        # Simulate exit cost logic securely
-        entry_time = datetime.strptime(session_rec['entry_time'], '%Y-%m-%d %H:%M:%S.%f')
-        exit_time = datetime.now()
-        duration_mins = int((exit_time - entry_time).total_seconds() / 60)
-        if duration_mins == 0: duration_mins = 60
-        
-        subscription = cursor.execute("SELECT id FROM subscriptions WHERE user_id = ? AND status = 'active'", (user_id,)).fetchone()
-        cost = 0.0
-        if not subscription:
-            hours = max(1, duration_mins / 60)
-            v_type = session_rec['vehicle_type']
-            rate = {"motorcycle": 20.0, "car": 50.0, "truck": 100.0}.get(v_type, 50.0)
-            cost = hours * rate
-            
-        cursor.execute("UPDATE parking_sessions SET exit_time = ?, total_duration_minutes = ?, cost = ?, status = 'completed' WHERE id = ?",
-                       (exit_time, duration_mins, cost, session_rec['id']))
-        db.commit()
-        # Redirect to the dynamic payment gateway funnel
-        return redirect(url_for('payment_page', session_id=session_rec['id']))
-        
-    return redirect(url_for('user_dashboard', msg="Booking Cancelled / Checked out safely. Thank you!"))
+    # Redirect to the dynamic payment gateway funnel
+    return redirect(url_for('payment_page', session_id=session_rec['id']))
 
 @app.route('/api/receipt/<int:session_id>', methods=['GET'])
 def get_receipt(session_id):

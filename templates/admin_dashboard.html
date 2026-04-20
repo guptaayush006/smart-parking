@@ -145,10 +145,17 @@
         <div class="slot-grid">
             {% for slot in slots %}
             {% if slot.is_occupied %}
-            <div class="slot-box occupied" title="Slot Occupied" data-slot-id="{{ slot.id }}">
-                <i class="fa-solid fa-car-side" style="color: var(--danger); font-size: 1.8rem;"></i>
-                <div class="slot-id" style="color: var(--danger);">{{ slot.name }}</div>
-            </div>
+                {% if slot.status == 'occupied' %}
+                <div class="slot-box occupied" title="Slot Occupied" data-slot-id="{{ slot.id }}">
+                    <i class="fa-solid fa-car-side" style="color: var(--danger); font-size: 1.8rem;"></i>
+                    <div class="slot-id" style="color: var(--danger);">{{ slot.name }}</div>
+                </div>
+                {% else %}
+                <div class="slot-box" title="Slot Booked" data-slot-id="{{ slot.id }}" style="border-color: rgba(59, 130, 246, 0.3); opacity: 0.6;">
+                    <i class="fa-solid fa-lock" style="color: #3b82f6; font-size: 1.8rem;"></i>
+                    <div class="slot-id" style="color: #3b82f6;">{{ slot.name }}</div>
+                </div>
+                {% endif %}
             {% else %}
             <div class="slot-box available" data-slot-id="{{ slot.id }}">
                 <i class="fa-solid fa-square-parking" style="color: var(--success); font-size: 1.8rem;"></i>
@@ -336,7 +343,7 @@
                             
                             <!-- Block/Unblock Form -->
                             <form action="/api/admin/toggle_block/{{ u.id }}" method="POST" style="margin: 0; display: flex; align-items: center;">
-                                <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; background: {% if u.is_blocked %}var(--success){% else %}rgba(239, 68, 68, 0.8){% endif %}; color: white; border: none;">
+                                <button type="submit" class="btn" {% if u.is_blocked %}style="padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; background: var(--success); color: white; border: none;"{% else %}style="padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.8); color: white; border: none;"{% endif %}>
                                     {% if u.is_blocked %}<i class="fa-solid fa-unlock"></i> Unblock{% else %}<i class="fa-solid fa-ban"></i> Block{% endif %}
                                 </button>
                             </form>
@@ -408,6 +415,9 @@
     </div>
 </div>
 
+<script id="chart-data" type="application/json">
+    {{ chart_data | tojson | safe }}
+</script>
 <script>
     function switchTab(tabId) {
         // Hide all contents
@@ -455,7 +465,7 @@
     }
 
     let currentChart = null;
-    const chartDataRaw = {{ chart_data | tojson | safe }};
+    const chartDataRaw = JSON.parse(document.getElementById('chart-data').textContent || '{}');
 
     function filterTransactionTable() {
         const query = document.getElementById('transactionSearch').value.toLowerCase();

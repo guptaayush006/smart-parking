@@ -142,7 +142,7 @@
     <div style="display: flex; flex-direction: column; gap: 1rem;">
         {% for txn in transactions %}
         <div
-            style="background: rgba(0,0,0,0.2); padding: 1.2rem 1.5rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid {% if txn.payment_method == 'wallet_load' %}var(--success){% else %}var(--primary){% endif %};">
+            {% if txn.payment_method == 'wallet_load' %}style="background: rgba(0,0,0,0.2); padding: 1.2rem 1.5rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--success);"{% else %}style="background: rgba(0,0,0,0.2); padding: 1.2rem 1.5rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary);"{% endif %}>
             <div>
                 <strong style="font-size: 1.1rem; color: white; display: block; margin-bottom: 0.3rem;">
                     {% if txn.payment_method == 'wallet_load' %}
@@ -156,7 +156,7 @@
             </div>
             <div style="text-align: right;">
                 <span
-                    style="font-size: 1.2rem; font-weight: bold; color: {% if txn.payment_method == 'wallet_load' %}var(--success){% else %}white{% endif %};">
+                    {% if txn.payment_method == 'wallet_load' %}style="font-size: 1.2rem; font-weight: bold; color: var(--success);"{% else %}style="font-size: 1.2rem; font-weight: bold; color: white;"{% endif %}>
                     {% if txn.payment_method == 'wallet_load' %}+{% else %}-{% endif %}₹{{ "%.2f"|format(txn.amount) }}
                 </span>
                 <div

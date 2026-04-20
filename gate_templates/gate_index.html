@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Gate Terminal - AI Scan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Bring in Tesseract.js -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.75);
+            --primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .terminal-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        
+        .header p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
+
+        /* Camera Box */
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        #videoFeed {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        .ai-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7); display: none; z-index: 10;
+        }
+
+        .ai-overlay p { margin-top: 15px; font-weight: 600; font-family: 'Outfit'; letter-spacing: 1px;}
+        
+        /* Scan Line Animation */
+        .scan-line {
+            position: absolute; width: 100%; height: 4px; background: var(--primary);
+            box-shadow: 0 0 10px var(--primary); opacity: 0.7;
+            animation: scan 2s linear infinite; display: none;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+
+        /* Result display */
+        .scanner-box {
+            background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px; padding: 15px; margin-bottom: 20px;
+        }
+
+        .plate-input {
+            width: 100%; background: transparent; border: none; outline: none;
+            color: #fff; font-size: 2rem; font-weight: 800; text-align: center;
+            font-family: 'Outfit', sans-serif; letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        .btn-controls { display: flex; gap: 15px; }
+
+        .btn-action {
+            flex: 1; padding: 14px; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 8px; color: white;
+        }
+
+        .btn-camera { background: rgba(59, 130, 246, 0.2); border: 1px solid var(--primary); }
+        .btn-camera:hover { background: rgba(59, 130, 246, 0.4); }
+        
+        .btn-verify { background: var(--primary); }
+        .btn-verify:hover { background: #2563eb; transform: translateY(-2px); }
+
+        /* Status Animations */
+        .status-badge {
+            display: none; margin-top: 20px; padding: 15px; border-radius: 12px;
+            font-weight: 600; align-items: center; gap: 15px; text-align: left;
+        }
+        .status-granted { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: #34d399; }
+        .status-denied { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: #f87171; }
+        .status-message { font-size: 1.1rem; }
+        .status-sub { font-size: 0.85rem; color: var(--text-muted); display: block;}
+
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--primary);
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .small-loader { width: 20px; height: 20px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="terminal-container">
+        <div class="header">
+            <h1><i class="fa-solid fa-camera"></i> ANPR Gate AI</h1>
+            <p>Live Optical Character Recognition System</p>
+        </div>
+
+        <div class="camera-container">
+            <video id="videoFeed" autoplay playsinline></video>
+            <div class="scan-line" id="scanLine"></div>
+            
+            <div class="ai-overlay" id="aiOverlay">
+                <div class="spinner"></div>
+                <p id="aiStatusText">Processing Image...</p>
+            </div>
+            
+            <canvas id="canvasSnap" style="display:none;"></canvas>
+        </div>
+
+        <div class="scanner-box">
+            <input type="text" id="plateNo" class="plate-input" placeholder="SCAN READY" autocomplete="off">
+        </div>
+
+        <div class="btn-controls">
+            <button class="btn-action btn-camera" onclick="captureAndOCR()" id="btnCapture">
+                <i class="fa-solid fa-expand"></i> Capture & AI Scan
+            </button>
+
+            <button class="btn-action btn-verify" onclick="verifyGate()" id="verifyBtn">
+                <i class="fa-solid fa-shield-check" id="btnIcon"></i> 
+                <span id="btnText">Verify Manual</span>
+                <div class="spinner small-loader" id="btnLoader"></div>
+            </button>
+        </div>
+
+        <div class="status-badge" id="statusBox">
+            <i class="fa-solid fa-circle-check fa-2x" id="sIcon"></i>
+            <div>
+                <span class="status-message" id="sMsg">Access Granted</span>
+                <span class="status-sub" id="sSub">...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('videoFeed');
+        const canvas = document.getElementById('canvasSnap');
+        const context = canvas.getContext('2d');
+        const plateInput = document.getElementById('plateNo');
+        const aiOverlay = document.getElementById('aiOverlay');
+        const aiStatusText = document.getElementById('aiStatusText');
+        const scanLine = document.getElementById('scanLine');
+
+        // Start WebCam
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then((stream) => { video.srcObject = stream; })
+            .catch((err) => {
+                aiOverlay.style.display = 'flex';
+                aiStatusText.innerHTML = "Camera Access Denied or No Camera Found.";
+                aiOverlay.querySelector('.spinner').style.display = 'none';
+            });
+
+        // Setup Tesseract Worker manually to improve speed if possible
+        async function captureAndOCR() {
+            // Take snapshot
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Extract Data URL
+            const imageData = canvas.toDataURL('image/png');
+            
+            // UI effect
+            aiOverlay.style.display = 'flex';
+            scanLine.style.display = 'block';
+            aiStatusText.innerText = "Extracting Number Plate (AI)...";
+            document.getElementById('statusBox').style.display = 'none';
+
+            try {
+                // Run OCR completely inside the browser!
+                const { data: { text } } = await Tesseract.recognize(imageData, 'eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            aiStatusText.innerText = "OCR Progress: " + Math.round(m.progress * 100) + "%";
+                        }
+                    }
+                });
+
+                // Clean the text: Remove all non-alphanumeric chars (keep letters & numbers)
+                let cleanedText = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                
+                aiOverlay.style.display = 'none';
+                scanLine.style.display = 'none';
+
+                if(cleanedText.length < 3) {
+                    alert('Could not detect a valid number plate. Please try focusing the camera.');
+                } else {
+                    plateInput.value = cleanedText;
+                    // Auto-verification after capturing a decent length string
+                    verifyGate();
+                }
+            } catch (err) {
+                aiOverlay.style.display = 'none';
+                scanLine.style.display = 'none';
+                alert('OCR Failed: ' + err.message);
+            }
+        }
+
+        async function verifyGate() {
+            const vehicleNumber = plateInput.value.trim().toUpperCase();
+            if (!vehicleNumber) return;
+
+            const btn = document.getElementById('verifyBtn');
+            const btnIcon = document.getElementById('btnIcon');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const statusBox = document.getElementById('statusBox');
+
+            btn.disabled = true;
+            btnIcon.style.display = 'none'; btnText.style.display = 'none';
+            btnLoader.style.display = 'block'; statusBox.style.display = 'none';
+
+            try {
+                const response = await fetch('/proxy/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vehicle_number: vehicleNumber })
+                });
+
+                const data = await response.json();
+                
+                btn.disabled = false;
+                btnIcon.style.display = 'inline-block'; btnText.style.display = 'inline-block';
+                btnLoader.style.display = 'none';
+
+                const sIcon = document.getElementById('sIcon');
+                const sMsg = document.getElementById('sMsg');
+                const sSub = document.getElementById('sSub');
+
+                statusBox.className = 'status-badge ' + (data.status === 'allowed' ? 'status-granted' : 'status-denied');
+                sIcon.className = data.status === 'allowed' ? 'fa-solid fa-circle-check fa-2x' : 'fa-solid fa-circle-xmark fa-2x';
+                sMsg.innerText = data.status === 'allowed' ? 'Gate OPENED (Granted)' : 'Gate CLOSED (Denied)';
+                
+                let subText = data.message || '';
+                if(data.mode) subText += ' | ' + data.mode;
+                if(data.cost) subText += ` | Cost: ₹${data.cost}`;
+                
+                sSub.innerText = subText;
+                statusBox.style.display = 'flex';
+
+            } catch (error) {
+                btn.disabled = false;
+                btnLoader.style.display = 'none';
+                btnIcon.style.display = 'inline-block'; btnText.style.display = 'inline-block';
+                alert('Connection Error to Server');
+            }
+        }
+    </script>
+</body>
+</html>
