@@ -41,12 +41,20 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 2. Run the Server
-Launch the primary backend application.
+### 2. Run the Servers
+For the full experience, run both the backend server and the standalone AI Gate application in separate terminals.
+
+**Launch the Main Web Application:**
 ```bash
 python app.py
 ```
-*The main application runs on `http://127.0.0.1:5000`.*
+*Access the main application at `http://127.0.0.1:5000`.*
+
+**Launch the AI Gate Terminal:**
+```bash
+python gate_app.py
+```
+*Access the LIVE Gate camera scanner at `http://127.0.0.1:5001`.*
 
 ### 3. Setup Administrator Accounts
 Registration defaults to normal users unless the email matches predefined Admin credentials. To access the admin panel, register with one of the following emails:
