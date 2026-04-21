@@ -64,9 +64,12 @@
                         class="fa-solid fa-right-to-bracket"></i> Sign In</button>
             </form>
             <p style="text-align: center; margin-top: 2rem; font-size: 0.95rem; color: var(--text-muted);">
-                Don't have an account? <a href="javascript:void(0)" onclick="toggleAuth()"
+                Don't have an account? <a href="javascript:void(0)" onclick="showSection('register-section')"
                     style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary); padding-bottom: 2px;">Register
                     Now</a>
+                <br><br>
+                <a href="javascript:void(0)" onclick="showSection('forgot-section')" class="forgot-link" style="color: var(--text-muted); text-decoration: none; transition: 0.2s;"><i class="fa-solid fa-lock" style="font-size: 0.8rem; margin-right: 0.3rem;"></i>Forgot Password?</a>
+                <style>.forgot-link:hover { color: white !important; }</style>
             </p>
         </div>
 
@@ -97,7 +100,41 @@
                         class="fa-solid fa-user-plus"></i> Register Free</button>
             </form>
             <p style="text-align: center; margin-top: 2rem; font-size: 0.95rem; color: var(--text-muted);">
-                Already have an account? <a href="javascript:void(0)" onclick="toggleAuth()"
+                Already have an account? <a href="javascript:void(0)" onclick="showSection('login-section')"
+                    style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary); padding-bottom: 2px;">Back
+                    to Login</a>
+            </p>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div id="forgot-section" style="display: none;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h3 style="font-size: 1.8rem; color: white;">Reset Password</h3>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">Verify your identity to reset</p>
+            </div>
+
+            <form action="/api/auth/forgot_password" method="POST">
+                <div class="form-group">
+                    <label>Registered Email</label>
+                    <input type="email" name="email" required placeholder="user@example.com"
+                        style="background: rgba(0,0,0,0.3);">
+                </div>
+                <div class="form-group">
+                    <label>Registered Full Name</label>
+                    <input type="text" name="name" required placeholder="John Doe"
+                        style="background: rgba(0,0,0,0.3);">
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" name="new_password" required placeholder="••••••••" minlength="6"
+                        style="background: rgba(0,0,0,0.3);">
+                </div>
+                <button type="submit" class="btn primary"
+                    style="width: 100%; margin-top: 1.5rem; padding: 1.2rem; font-size: 1.1rem; border-radius: 12px; box-shadow: var(--shadow-glow);"><i
+                        class="fa-solid fa-key"></i> Reset Password</button>
+            </form>
+            <p style="text-align: center; margin-top: 2rem; font-size: 0.95rem; color: var(--text-muted);">
+                Remembered your password? <a href="javascript:void(0)" onclick="showSection('login-section')"
                     style="color: var(--primary); text-decoration: none; font-weight: 600; border-bottom: 1px dashed var(--primary); padding-bottom: 2px;">Back
                     to Login</a>
             </p>
@@ -106,16 +143,12 @@
 </div>
 
 <script>
-    function toggleAuth() {
-        const login = document.getElementById('login-section');
-        const register = document.getElementById('register-section');
-        if (login.style.display === 'none') {
-            login.style.display = 'block';
-            register.style.display = 'none';
-        } else {
-            login.style.display = 'none';
-            register.style.display = 'block';
-        }
+    function showSection(sectionId) {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('register-section').style.display = 'none';
+        document.getElementById('forgot-section').style.display = 'none';
+        
+        document.getElementById(sectionId).style.display = 'block';
     }
 
     // Checking for URL params to show alerts

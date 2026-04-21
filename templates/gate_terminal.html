@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh;">
     <div style="text-align: center; margin-bottom: 2rem;">
@@ -100,44 +99,18 @@
     const openOverlay = document.getElementById('gate-status-overlay');
     const deniedOverlay = document.getElementById('gate-denied-overlay');
     
-    let isAutoScanning = false;
-    let worker = null;
-
-    async function initOCR() {
-        statusText.innerText = "Loading AI Core...";
-        worker = await Tesseract.createWorker('eng', 1, {
-            logger: m => {
-                if (m.status === 'recognizing text') {
-                    const percent = (m.progress * 100).toFixed(0);
-                    progressBar.style.width = percent + '%';
-                    progressText.innerText = percent + '%';
-                }
-            }
-        });
-        statusText.innerText = "System Ready";
-        document.getElementById('scanning-progress').style.display = 'block';
-    }
-
-    async function setupCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            video.srcObject = stream;
-        } catch (err) {
-            alert("Camera access denied or not found.");
-            console.error(err);
-        }
-    }
-
     function toggleAutoScan() {
         isAutoScanning = !isAutoScanning;
-        scanBtn.innerHTML = isAutoScanning ? '<i class="fa-solid fa-stop"></i> Stop Scanning' : '<i class="fa-solid fa-camera"></i> Start Auto-Scan';
+        scanBtn.innerHTML = isAutoScanning ? '<i class="fa-solid fa-stop"></i> Stop Scanning' : '<i class="fa-solid fa-camera"></i> Start AI Scan';
         scanBtn.className = isAutoScanning ? 'btn' : 'btn primary';
         
         if (isAutoScanning) {
             document.getElementById('scanner-line').classList.add('scan-line-animation');
+            document.getElementById('scanning-progress').style.display = 'block';
             autoScanLoop();
         } else {
             document.getElementById('scanner-line').classList.remove('scan-line-animation');
+            document.getElementById('scanning-progress').style.display = 'none';
         }
     }
 
@@ -146,30 +119,49 @@
         
         await captureAndScan();
         
-        // Wait 3 seconds before next scan to avoid spamming
-        if (isAutoScanning) setTimeout(autoScanLoop, 3000);
+        // Wait 4 seconds before next scan for better performance
+        if (isAutoScanning) setTimeout(autoScanLoop, 4000);
     }
 
     async function captureAndScan() {
-        if (!worker) return;
-        
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
         
-        statusText.innerText = "Scanning Frame...";
-        const { data: { text } } = await worker.recognize(canvas);
-        
-        // Extract plate number (Basic regex: A-Z and digits, min 4 chars)
-        const plateMatch = text.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        
-        if (plateMatch && plateMatch.length >= 4) {
-            statusText.innerText = `Detected: ${plateMatch}`;
-            verifyVehicle(plateMatch);
-        } else {
-            statusText.innerText = "Searching for plate...";
+        statusText.innerText = "AI Analyzing Plate...";
+        progressBar.style.width = '50%';
+        progressText.innerText = '50%';
+
+        try {
+            const res = await fetch('/api/gate/scan_ocr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            });
+            const data = await res.json();
+            
+            progressBar.style.width = '100%';
+            progressText.innerText = '100%';
+
+            if (data.status === 'allowed') {
+                statusText.innerText = `Detected: ${data.vehicle_number || "Authorized"}`;
+                showAccess('granted', data.message);
+                addLog(data.vehicle_number || "Authorized", data.mode, 'Access Granted');
+            } else {
+                if (data.vehicle_number) {
+                    statusText.innerText = `Detected: ${data.vehicle_number} (Denied)`;
+                } else {
+                    statusText.innerText = "No plate detected.";
+                }
+                showAccess('denied', data.message);
+                if (data.vehicle_number) addLog(data.vehicle_number, 'DENIED', data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            statusText.innerText = "Connection Error";
         }
     }
 
@@ -223,7 +215,6 @@
 
     window.onload = () => {
         setupCamera();
-        initOCR();
     };
 </script>
 {% endblock %}

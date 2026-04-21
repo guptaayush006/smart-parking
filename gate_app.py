@@ -1,12 +1,24 @@
 from flask import Flask, render_template, request, jsonify
 import requests
+import easyocr
+import cv2
+import numpy as np
+import base64
+import re
+import io
+from PIL import Image
 
 app = Flask(__name__, template_folder='gate_templates')
 
 # Configuration to connect to main server
 MAIN_SERVER = "http://127.0.0.1:5000"
-ADMIN_EMAIL = "admin@smartparking.com"  
+ADMIN_EMAIL = "guptaayush122006@gmail.com"  
 ADMIN_PASSWORD = "admin"
+
+# Initialize EasyOCR Reader (English)
+# This will download the model files on the first run
+print("--- AI: Initializing EasyOCR Engine... ---")
+reader = easyocr.Reader(['en'], gpu=False, verbose=False) 
 
 # Global session to maintain admin login to main app
 api_session = requests.Session()
@@ -43,6 +55,51 @@ def proxy_verify():
         return jsonify({'status': 'denied', 'message': 'Main Server (127.0.0.1:5000) is offline.'}), 500
     except Exception as e:
         return jsonify({'status': 'denied', 'message': str(e)}), 500
+
+@app.route('/proxy/scan_ocr', methods=['POST'])
+def proxy_scan_ocr():
+    """Receive image from webcam, run OCR, and verify with gate."""
+    data = request.json.get('image')
+    if not data:
+        return jsonify({'status': 'denied', 'message': 'No image received'}), 400
+
+    try:
+        # 1. Decode base64 image
+        header, encoded = data.split(",", 1)
+        image_data = base64.b64decode(encoded)
+        
+        # 2. Convert to OpenCV format
+        nparr = np.frombuffer(image_data, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        # 3. AI Text Extraction
+        results = reader.readtext(img, detail=0)
+        print(f"--- AI Detected Text: {results} ---")
+        
+        # 4. Find the most likely Number Plate
+        # We look for alphanumeric strings that aren't common noise
+        plate = ""
+        for text in results:
+            clean = re.sub(r'[^A-Z0-9]', '', text.upper())
+            if len(clean) >= 4: # Typical plate length minimum
+                plate = clean
+                break
+        
+        if not plate:
+            return jsonify({'status': 'denied', 'message': 'Could not detect any clear text. Try holding the paper steady.'})
+
+        # 5. Automatically verify with main server
+        ensure_login()
+        req = api_session.post(f"{MAIN_SERVER}/api/gate/verify", json={'vehicle_number': plate})
+        
+        result = req.json()
+        # Add the detected plate to the response so the UI can show what it read
+        result['vehicle_number'] = plate
+        return jsonify(result), req.status_code
+
+    except Exception as e:
+        print(f"OCR Error: {e}")
+        return jsonify({'status': 'denied', 'message': f'AI Error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     print("==================================================")

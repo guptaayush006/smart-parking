@@ -21,8 +21,7 @@
             style="list-style: none; display: flex; gap: 1rem; align-items: center; margin: 0; padding: 0;">
             {% if session.get('user_id') %}
             {% if session.get('role') == 'admin' %}
-            <li><a href="/gate_terminal" class="btn primary" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-camera-retro"></i> Gate Terminal</a></li>
-            <li><a href="/admin_dashboard" class="btn" style="padding: 0.5rem 1rem;">Admin Console</a></li>
+            <li><a href="/admin_dashboard" class="btn primary" style="padding: 0.5rem 1rem;">Admin Console</a></li>
             <li><a href="/logout" class="btn"
                     style="padding: 0.5rem 1rem; border: 1px solid var(--danger); color: var(--danger);">Logout</a></li>
             {% else %}

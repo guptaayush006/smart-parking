@@ -6,8 +6,6 @@
     <title>Smart Gate Terminal - AI Scan</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Bring in Tesseract.js -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -205,42 +203,61 @@
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
             // Extract Data URL
-            const imageData = canvas.toDataURL('image/png');
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
             
             // UI effect
             aiOverlay.style.display = 'flex';
             scanLine.style.display = 'block';
-            aiStatusText.innerText = "Extracting Number Plate (AI)...";
+            aiStatusText.innerText = "Analyzing Plate with AI...";
             document.getElementById('statusBox').style.display = 'none';
 
             try {
-                // Run OCR completely inside the browser!
-                const { data: { text } } = await Tesseract.recognize(imageData, 'eng', {
-                    logger: m => {
-                        if (m.status === 'recognizing text') {
-                            aiStatusText.innerText = "OCR Progress: " + Math.round(m.progress * 100) + "%";
-                        }
-                    }
+                // Send to our server-side EasyOCR logic
+                const response = await fetch('/proxy/scan_ocr', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
                 });
 
-                // Clean the text: Remove all non-alphanumeric chars (keep letters & numbers)
-                let cleanedText = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                const data = await response.json();
                 
                 aiOverlay.style.display = 'none';
                 scanLine.style.display = 'none';
 
-                if(cleanedText.length < 3) {
-                    alert('Could not detect a valid number plate. Please try focusing the camera.');
-                } else {
-                    plateInput.value = cleanedText;
-                    // Auto-verification after capturing a decent length string
-                    verifyGate();
+                // Display the plate recognized by AI in the input field
+                if (data.vehicle_number) {
+                    plateInput.value = data.vehicle_number;
+                }
+
+                // Show visual feedback box
+                verifyGateSuccess(data);
+
+                if(data.status === 'denied' && !data.vehicle_number) {
+                    alert('AI Result: Could not detect any text. Please hold the paper closer and steady.');
                 }
             } catch (err) {
                 aiOverlay.style.display = 'none';
                 scanLine.style.display = 'none';
-                alert('OCR Failed: ' + err.message);
+                alert('Connection Error to AI Backend: ' + err.message);
             }
+        }
+
+        function verifyGateSuccess(data) {
+                const statusBox = document.getElementById('statusBox');
+                const sIcon = document.getElementById('sIcon');
+                const sMsg = document.getElementById('sMsg');
+                const sSub = document.getElementById('sSub');
+
+                statusBox.className = 'status-badge ' + (data.status === 'allowed' ? 'status-granted' : 'status-denied');
+                sIcon.className = data.status === 'allowed' ? 'fa-solid fa-circle-check fa-2x' : 'fa-solid fa-circle-xmark fa-2x';
+                sMsg.innerText = data.status === 'allowed' ? 'Gate OPENED (Granted)' : 'Gate CLOSED (Denied)';
+                
+                let subText = data.message || '';
+                if(data.mode) subText += ' | ' + data.mode;
+                if(data.cost) subText += ` | Cost: ₹${data.cost}`;
+                
+                sSub.innerText = subText;
+                statusBox.style.display = 'flex';
         }
 
         async function verifyGate() {

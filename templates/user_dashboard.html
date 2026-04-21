@@ -256,7 +256,7 @@
                 </div>
                 {% else %}
                 <form id="checkout-form-{{ active_b.id }}" action="/api/user_checkout/{{ active_b.id }}" method="POST" style="display: none;"></form>
-                <div class="slot-box user-booked" title="Reserved - Awaiting Gate Entry" data-slot-id="{{ slot.id }}" onclick="if(confirm('Cancel booking for Slot {{ slot.name }}?')) document.getElementById('checkout-form-{{ active_b.id }}').submit();">
+                <div class="slot-box user-booked countdown-slot" title="Reserved - Awaiting Gate Entry" data-slot-id="{{ slot.id }}" data-start-time="{{ slot.start_time_str }}" onclick="if(confirm('Cancel booking for Slot {{ slot.name }}?')) document.getElementById('checkout-form-{{ active_b.id }}').submit();">
                     <i class="fa-solid fa-ticket" style="color: #3b82f6; font-size: 1.8rem;"></i>
                     <div class="slot-id" style="color: #3b82f6;">{{ slot.name }}</div>
                     <div style="font-size: 0.65rem; color: #3b82f6; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px;">BOOKED - CANCEL</div>
@@ -269,7 +269,7 @@
                     <div class="slot-id" style="color: var(--danger);">{{ slot.name }}</div>
                 </div>
                 {% else %}
-                <div class="slot-box booked" title="Slot Booked" data-slot-id="{{ slot.id }}">
+                <div class="slot-box booked countdown-slot" title="Slot Booked" data-slot-id="{{ slot.id }}" data-start-time="{{ slot.start_time_str }}">
                     <i class="fa-solid fa-lock" style="color: #3b82f6; font-size: 1.8rem;"></i>
                     <div class="slot-id" style="color: #3b82f6;">{{ slot.name }}</div>
                 </div>
@@ -416,6 +416,49 @@
         let countdownInterval = null;
         let timeLeft = 5;
         const savedNumber = "{{ user.vehicle_number if user.vehicle_number else '' }}";
+
+        // Global 5-minute Slot Countdown
+        document.addEventListener('DOMContentLoaded', () => {
+            const slots = document.querySelectorAll('.countdown-slot');
+            setInterval(() => {
+                const now = new Date();
+                slots.forEach(slot => {
+                    const startTimeStr = slot.getAttribute('data-start-time');
+                    if (startTimeStr && startTimeStr !== 'None') {
+                        // Compatibility for Safari/older browsers
+                        const start = new Date(startTimeStr.replace(' ', 'T'));
+                        const expireTime = new Date(start.getTime() + 5 * 60000); 
+                        const diffSec = Math.floor((expireTime - now) / 1000);
+                        
+                        let timeText = slot.querySelector('.countdown-text');
+                        if (!timeText) {
+                            timeText = document.createElement('div');
+                            timeText.className = 'countdown-text';
+                            timeText.style.fontSize = '0.75rem';
+                            timeText.style.fontWeight = 'bold';
+                            timeText.style.marginTop = '4px';
+                            // Add a small clock icon
+                            timeText.innerHTML = '<i class="fa-regular fa-clock"></i> <span></span>';
+                            slot.appendChild(timeText);
+                        }
+
+                        if (diffSec > 0) {
+                            const m = Math.floor(diffSec / 60);
+                            const s = diffSec % 60;
+                            timeText.querySelector('span').innerText = ` ${m}:${s.toString().padStart(2, '0')}`;
+                            timeText.style.color = '#f87171'; // Warning red
+                        } else {
+                            timeText.querySelector('span').innerText = ` Expired`;
+                            // Auto-refresh once if expired
+                            if (!slot.dataset.refreshing) {
+                                slot.dataset.refreshing = "true";
+                                setTimeout(() => window.location.reload(), 1500);
+                            }
+                        }
+                    }
+                });
+            }, 1000);
+        });
 
         function openBookingModal(id, name) {
             document.getElementById('modal-slot-id').value = id;

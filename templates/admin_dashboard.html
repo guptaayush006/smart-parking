@@ -134,6 +134,7 @@
 <!-- TAB NAVIGATION -->
 <div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1.5rem; overflow-x: auto;">
     <button class="btn tab-btn active" id="tab-btn-map" onclick="switchTab('map')"><i class="fa-solid fa-map-location-dot"></i> Live Map</button>
+    <button class="btn tab-btn" id="tab-btn-gate" onclick="switchTab('gate')"><i class="fa-solid fa-camera-viewfinder"></i> AI Gate Scan</button>
     <button class="btn tab-btn" id="tab-btn-users" onclick="switchTab('users')"><i class="fa-solid fa-users-gear"></i> Users & Logs</button>
     <button class="btn tab-btn" id="tab-btn-analytics" onclick="switchTab('analytics')"><i class="fa-solid fa-chart-area"></i> Revenue & History</button>
 </div>
@@ -170,42 +171,7 @@
     <div
         style="flex: 1; min-width: 300px; background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 12px; height: fit-content; border: 1px solid var(--glass-border);">
 
-        <!-- Simulate Barrier Option - Soft replacement for the full Toll UI -->
-        <h3 style="color: var(--primary); margin-bottom: 1rem;"><i class="fa-solid fa-bridge"></i> Gate Simulation (API
-            Tool)</h3>
-        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">Use this to quickly test vehicle
-            entries/exits from the admin panel directly.</p>
-        <form style="display:flex; gap:0.5rem; margin-bottom: 2rem;">
-            <input type="text" id="sim-vehicle" placeholder="Enter Vehicle No."
-                style="flex:1; padding: 0.5rem; border-radius: 4px; border: none;">
-            <button type="button" class="btn primary" style="padding: 0.5rem;"
-                onclick="simulateGate('entry')">Entry</button>
-            <button type="button" class="btn" style="padding: 0.5rem; background: var(--text-muted);"
-                onclick="simulateGate('exit')">Exit</button>
-        </form>
-
-        <h3 style="color: var(--danger); margin-bottom: 1rem;"><i class="fa-solid fa-triangle-exclamation"></i>
-            Emergency Slot Operations</h3>
-        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">If a vehicle leaves without
-            checking out through the toll gate, you can force free the slot assigned to their booking here.</p>
-
-        <form id="force-free-form" method="POST" action="">
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <select id="force-slot-select" name="slot_id" required
-                    style="padding: 0.5rem; width: 100%; border-radius: 4px;">
-                    <option value="" disabled selected>-- Select Occupied Slot --</option>
-                    {% for slot in slots %}
-                    {% if slot.is_occupied %}
-                    <option value="{{ slot.id }}">Slot {{ slot.name }} (Occupied)</option>
-                    {% endif %}
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="btn"
-                style="width: 100%; padding: 0.5rem; background: var(--danger); color: white;">Force Free Slot</button>
-        </form>
-
-        <h3 style="color: var(--primary); margin-top: 2.5rem; margin-bottom: 1rem;"><i
+        <h3 style="color: var(--primary); margin-bottom: 1rem;"><i
                 class="fa-solid fa-clock-rotate-left"></i> Real-time Active Sessions</h3>
         {% if active_sessions %}
         <div style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
@@ -223,6 +189,62 @@
         {% endif %}
     </div>
 </div>
+
+<!-- NEW: AI GATE SCAN SECTION -->
+<div id="section-gate" class="admin-tab-content" style="display: none;">
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+        
+        <!-- Camera Feed Section -->
+        <div style="flex: 2; min-width: 400px; background: rgba(0,0,0,0.5); padding: 1.5rem; border-radius: 24px; border: 1px solid var(--glass-border); position: relative; overflow: hidden;">
+            <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-video"></i> AI Gate Monitor</h3>
+            
+            <div style="position: relative; border-radius: 12px; overflow: hidden; background: #000; height: 350px;">
+                <video id="dashboardVideo" width="100%" height="100%" autoplay playsinline style="object-fit: cover;"></video>
+                
+                <!-- Scan Animation Line -->
+                <div id="dashboardScanLine" style="position: absolute; width: 100%; height: 3px; background: var(--primary); box-shadow: 0 0 15px var(--primary); top: 0; display: none; animation: scanLineMove 2s linear infinite;"></div>
+                
+                <!-- Loading Overlay -->
+                <div id="dashboardAiOverlay" style="position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.7); display:none; flex-direction:column; align-items:center; justify-content:center; z-index: 10;">
+                    <div style="border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;"></div>
+                    <p style="margin-top: 1rem; font-weight: bold;">AI ANALYZING PLATE...</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+                <input type="text" id="dashboardPlateNo" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; font-size: 1.5rem; padding: 0.8rem; border-radius: 12px; text-align: center; text-transform: uppercase; font-weight: bold;" placeholder="SCAN READY">
+                <button class="btn primary" onclick="captureAndScanDashboard()" id="btnScanDashboard" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                    <i class="fa-solid fa-camera"></i> SCAN NOW
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Status Section -->
+        <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 1rem;">
+            <div id="gateStatusBox" style="display: none; background: rgba(0,0,0,0.3); padding: 2rem; border-radius: 24px; border: 1px solid var(--glass-border); text-align: center;">
+                <i id="gateStatusIcon" class="fa-solid fa-circle-check" style="font-size: 5rem; margin-bottom: 1rem;"></i>
+                <h2 id="gateStatusTitle" style="font-size: 2rem; margin-bottom: 0.5rem;">GATE OPEN</h2>
+                <p id="gateStatusMsg" style="color: var(--text-muted);"></p>
+                <div id="gateStatusPrice" style="margin-top: 1rem; font-size: 1.5rem; font-weight: bold; color: var(--success); display: none;"></div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 20px; border: 1px solid var(--glass-border); flex: 1;">
+                <h4 style="color: var(--primary); margin-bottom: 1rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Recent Access</h4>
+                <div id="dashboardGateLogs" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Scanner logs will appear here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes scanLineMove { 0% { top: 0; } 100% { top: 100%; } }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+
+<canvas id="dashboardCanvas" style="display: none;"></canvas>
+
 
 <!-- NEW: TRENDS & ANALYTICS SECTION -->
 <div id="section-analytics" class="admin-tab-content" style="display: none; flex-direction: column;">
@@ -419,6 +441,8 @@
     {{ chart_data | tojson | safe }}
 </script>
 <script>
+    let dashboardStream = null;
+
     function switchTab(tabId) {
         // Hide all contents
         document.querySelectorAll('.admin-tab-content').forEach(el => {
@@ -433,7 +457,7 @@
         // Show selected content
         const targetSection = document.getElementById(`section-${tabId}`);
         if(targetSection) {
-            targetSection.style.display = (tabId === 'map' || tabId === 'analytics') ? 'flex' : 'block';
+            targetSection.style.display = (tabId === 'map' || tabId === 'analytics' || tabId === 'gate') ? 'flex' : 'block';
         }
         
         // Highlight selected button
@@ -441,27 +465,132 @@
         if(activeBtn) {
             activeBtn.classList.add('active');
         }
+
+        // Camera Management
+        if(tabId === 'gate') {
+            startDashboardCamera();
+        } else {
+            stopDashboardCamera();
+        }
     }
 
-    async function simulateGate(mode) {
-        const vehicle = document.getElementById('sim-vehicle').value;
-        if (!vehicle) return alert('Enter vehicle number first');
-
-        const url = mode === 'entry' ? '/api/entry' : '/api/exit';
+    async function startDashboardCamera() {
+        const video = document.getElementById('dashboardVideo');
+        if(!video) return;
         try {
-            const res = await fetch(url, {
+            dashboardStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            video.srcObject = dashboardStream;
+        } catch (err) {
+            alert("Camera access denied or not found.");
+            console.error(err);
+        }
+    }
+
+    function stopDashboardCamera() {
+        if(dashboardStream) {
+            dashboardStream.getTracks().forEach(track => track.stop());
+            dashboardStream = null;
+        }
+    }
+
+    async function captureAndScanDashboard() {
+        const video = document.getElementById('dashboardVideo');
+        const canvas = document.getElementById('dashboardCanvas');
+        const overlay = document.getElementById('dashboardAiOverlay');
+        const scanLine = document.getElementById('dashboardScanLine');
+        const plateInput = document.getElementById('dashboardPlateNo');
+        const statusBox = document.getElementById('gateStatusBox');
+        
+        if(!video || !canvas) return;
+
+        // 1. Capture snapshot
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+        // 2. UI Feedback
+        overlay.style.display = 'flex';
+        scanLine.style.display = 'block';
+        statusBox.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/gate/scan_ocr', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ vehicle_number: vehicle })
+                body: JSON.stringify({ image: imageData })
             });
-            const data = await res.json();
-            if (res.ok) {
-                alert(`Success: ${data.message || 'Gate Operated'}\n\nPage will refresh.`);
-                window.location.reload();
-            } else {
-                alert(`Error: ${data.error}`);
+            const data = await response.json();
+
+            // 3. UI Cleanup
+            overlay.style.display = 'none';
+            scanLine.style.display = 'none';
+
+            if(data.vehicle_number) {
+                plateInput.value = data.vehicle_number;
             }
-        } catch (err) { console.error(err); }
+
+            // 4. Show Status Result
+            showGateStatus(data);
+            addDashboardGateLog(data.vehicle_number || "Unknown", data.mode || "SCAN", data.status);
+
+        } catch (err) {
+            overlay.style.display = 'none';
+            scanLine.style.display = 'none';
+            alert("Connection error to AI engine.");
+        }
+    }
+
+    function showGateStatus(data) {
+        const statusBox = document.getElementById('gateStatusBox');
+        const icon = document.getElementById('gateStatusIcon');
+        const title = document.getElementById('gateStatusTitle');
+        const msg = document.getElementById('gateStatusMsg');
+        const price = document.getElementById('gateStatusPrice');
+
+        statusBox.style.display = 'block';
+        if(data.status === 'allowed') {
+            statusBox.style.borderColor = 'var(--success)';
+            icon.className = 'fa-solid fa-circle-check';
+            icon.style.color = 'var(--success)';
+            title.innerText = "GATE OPEN";
+            title.style.color = 'var(--success)';
+        } else {
+            statusBox.style.borderColor = 'var(--danger)';
+            icon.className = 'fa-solid fa-circle-xmark';
+            icon.style.color = 'var(--danger)';
+            title.innerText = "ACCESS DENIED";
+            title.style.color = 'var(--danger)';
+        }
+
+        msg.innerText = data.message || "";
+        
+        if(data.cost) {
+            price.style.display = 'block';
+            price.innerText = "Fee Collected: ₹" + data.cost;
+        } else {
+            price.style.display = 'none';
+        }
+    }
+
+    function addDashboardGateLog(plate, mode, status) {
+        const container = document.getElementById('dashboardGateLogs');
+        if(!container) return;
+        
+        // Remove "Scanner logs will appear here" placeholder if it exists
+        if(container.querySelector('p')) container.innerHTML = '';
+
+        const time = new Date().toLocaleTimeString();
+        const logHtml = `
+            <div style="background: rgba(255,255,255,0.05); padding: 0.8rem; border-radius: 10px; border-left: 3px solid ${status === 'allowed' ? 'var(--success)' : 'var(--danger)'};">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <strong>${plate.toUpperCase()}</strong>
+                    <span style="color: var(--text-muted);">${time}</span>
+                </div>
+                <div style="font-size: 0.75rem; color: ${status === 'allowed' ? 'var(--success)' : 'var(--danger)'};">${mode} ${status.toUpperCase()}</div>
+            </div>
+        `;
+        container.insertAdjacentHTML('afterbegin', logHtml);
     }
 
     let currentChart = null;
@@ -632,16 +761,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const forceSlotSelect = document.getElementById('force-slot-select');
-            const forceForm = document.getElementById('force-free-form');
-            if (forceSlotSelect && forceForm) {
-                forceSlotSelect.addEventListener('change', (e) => {
-                    forceForm.action = `/api/admin/force_free/${e.target.value}`;
-                });
-            }
-        } catch (e) { console.error("Force Free Setup Error:", e); }
-        
         if (chartDataRaw && chartDataRaw.dates && chartDataRaw.dates.length > 0) {
             renderChart('line');
         }

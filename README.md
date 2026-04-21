@@ -1,65 +1,80 @@
-# 🚀 Smart Parking System – Next-Gen Access Control
+# 🚀 Smart Parking Pro – Next-Gen Access Control
 
-![Smart Parking System](https://img.shields.io/badge/Status-Active-success)
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![Flask](https://img.shields.io/badge/Framework-Flask-red)
+![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
+![Flask](https://img.shields.io/badge/Framework-Flask-red?style=for-the-badge&logo=flask)
+![UI](https://img.shields.io/badge/Design-Premium%20Glassmorphism-purple?style=for-the-badge)
 
-A state-of-the-art **Smart Parking System** built with Python and Flask, featuring a fully automated gate terminal with Artificial Intelligence (ANPR), premium glassmorphism aesthetics, dynamic chart analytics, and seamless digital wallet integrations. 
+A state-of-the-art **Smart Parking Ecosystem** built with Python and Flask. This project features a fully automated gate terminal driven by Artificial Intelligence (ANPR), premium glassmorphism aesthetics, dynamic chart analytics, and seamless digital wallet integrations for a frictionless user experience.
 
-## ✨ Key Features
+---
 
-### 📸 AI-Powered Gate Terminal (ANPR)
-- **Automatic Number Plate Recognition:** Integrates `Tesseract.js` directly into the web browser for lightning-fast, client-side vehicle plate extraction.
-- **Auto-Gate Control:** Instantly cross-checks plates with active database bookings to open the gate barrier, log entries, and flag unauthorized vehicles.
-- **Dynamic Overlays:** Real-time feedback with green "Access Granted" and red "Access Denied" overlays right on the camera feed.
+## ✨ Core Features
 
-### 💎 Premium User Dashboard
-- **Live Interactive Parking Map:** Visually select from 50 parking slots, dynamically color-coded (available, booked, physically inside, etc.).
-- **Digital Wallet & Payments:** Load funds via dynamically generated UPI QR codes and use your balance for smooth 1-click checkouts.
-- **VIP Subscriptions:** Upgrade to 'Standard' or 'Premium' memberships to enjoy automatic gate clearances, VIP zones, and heavily discounted long-term stays.
+### 🤖 AI-Powered Gate Terminal (ANPR)
+*   **Automatic Number Plate Recognition:** Leverages `EasyOCR` for high-precision vehicle plate extraction.
+*   **Auto-Gate Control:** Instantly cross-checks plates with active bookings to open the barrier, log entries, and flag unauthorized vehicles.
+*   **Real-time Logic:** Automated entry/exit detection with dynamic session management.
 
-### 📊 Advanced Admin Analytics
-- **Live Metrics & Graphs:** View daily revenue trends, wallet recharges, and booking distributions via interactive `Chart.js` visualizers.
-- **User & Identity Management:** One-click options to block/unblock users or manually top-up their wallets.
-- **Emergency Gate Control:** Force-free occupied slots or manually simulate gate API entries directly from the dashboard.
+### 💎 Premium User Experience
+*   **Live Interactive Map:** Visually select from 50 parking slots, dynamically color-coded by status (Available, Booked, Occupied).
+*   **Digital Wallet & Payments:** Load funds via UPI QR codes and use balance for 1-click checkout.
+*   **VIP Subscriptions:** Integrated membership system for discounted rates and automated clearances.
+
+### 📊 Advanced Admin Command Center
+*   **Live Analytics:** Real-time revenue trends and booking distributions via interactive `Chart.js` dashboards.
+*   **Identity Management:** One-click tools to block users, manually top-up wallets, or force-free slots.
+*   **Emergency Overrides:** Manual gate control and session simulation directly from the web interface.
+
+---
 
 ## 🛠️ Technology Stack
-- **Backend Infrastructure:** Python, Flask, SQL (SQLite3)
-- **Frontend Layer:** HTML5, modern CSS3 (Glassmorphism, custom CSS Variables), Vanilla JavaScript
-- **AI & Data Vis:** Tesseract.js (Optical Character Recognition), Chart.js (Data Analytics)
-- **Utilities:** `qrcode` (Secure Wallet API), Jinja2 Templating
 
-## 🚀 Getting Started
+| Layer | Technologies |
+| :--- | :--- |
+| **Backend** | Python, Flask, SQLite3 |
+| **Frontend** | HTML5, CSS3 (Glassmorphism), Vanilla JS |
+| **AI Engine** | EasyOCR, OpenCV (ANPR Logic) |
+| **Data Vis** | Chart.js 4.0 |
+| **Utilities** | qrcode, Jinja2, Werkzeug Security |
+
+---
+
+## 🚀 Quick Start
 
 ### 1. Installation
-Clone the repository and install the required dependencies:
+Clone the repository and set up the environment:
 ```bash
 git clone https://github.com/guptaayush006/smart-parking.git
 cd smart-parking
 python -m venv .venv
-# Activate virtual environment (.venv\Scripts\activate on Windows)
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Run the Servers
-For the full experience, run both the backend server and the standalone AI Gate application in separate terminals.
+### 2. Launch the Ecosystem
+For the full experience, run both the backend server and the standalone AI Gate application:
 
-**Launch the Main Web Application:**
+**Main Web Application (Port 5000):**
 ```bash
 python app.py
 ```
-*Access the main application at `http://127.0.0.1:5000`.*
 
-**Launch the AI Gate Terminal:**
+**AI Gate Camera Terminal (Port 5001):**
 ```bash
 python gate_app.py
 ```
-*Access the LIVE Gate camera scanner at `http://127.0.0.1:5001`.*
-
-### 3. Setup Administrator Accounts
-Registration defaults to normal users unless the email matches predefined Admin credentials. To access the admin panel, register with one of the following emails:
-- `admin@smartparking.com`
-- `system@smartparking.com`
 
 ---
-*Developed with a focus on modern UI aesthetics and frictionless user experiences.*
+
+## 🎨 Design Philosophy
+The system uses a **Glassmorphism Design System** defined in CSS variables, ensuring a sleek, modern, and consistent look across all modules. Mobile-responsive layouts and subtle micro-animations provide a premium feel on any device.
+
+---
+
+## 👨‍💻 Developed By
+**Ayush Gupta**  
+[GitHub Profile](https://github.com/guptaayush006)
+
+---
+*Developed with a focus on mission-critical stability and high-end visual aesthetics.*
